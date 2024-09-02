@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    // 모듈 시스템을 NodeNext로 설정. 최신 Node.js의 ESM 및 CommonJS 모듈을 지원.
+    "module": "NodeNext",
+
+    // 모듈 해석을 Node로 설정. Node.js에서 모듈을 찾는 방법을 사용.
+    "moduleResolution": "NodeNext",
+
+    // 모듈의 기본 경로를 'src'로 설정. import 구문에서 절대 경로를 사용할 수 있게 함.
+    "baseUrl": "src",
+
+    // 컴파일된 파일이 저장될 디렉터리를 'dist'로 설정.
+    "outDir": "dist",
+
+    // 소스맵 파일 생성을 활성화하여 디버깅 시 원본 TypeScript 코드와의 매핑을 제공.
+    "sourceMap": true,
+
+    // 암시적 any 타입 사용을 금지하여, 타입 안정성을 강화.
+    "noImplicitAny": true
+  },
+  // 컴파일러가 포함할 파일을 지정. 여기서는 'src' 디렉터리 내의 모든 파일을 포함.
+  "include": ["src/**/*"] // 상대 경로 사용
+}
