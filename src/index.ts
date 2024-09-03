@@ -7,6 +7,7 @@ import compression from "compression"; // HTTP 응답을 압축하기 위한 미
 import cors from "cors"; // Cross-Origin Resource Sharing (CORS)을 허용하기 위한 미들웨어를 가져옵니다.
 import mongoose from "mongoose"; // MongoDB와의 연결을 위한 Mongoose 라이브러리를 가져옵니다.
 import router from "./router";
+import { errorHandlerMiddleware } from "./middlewares/errorHandlerMiddleware";
 
 const PORT = process.env.PORT || 8080; // .env 파일에서 PORT 환경 변수를 가져옵니다.
 
@@ -22,6 +23,9 @@ app.use(
 app.use(express.json());
 app.use(compression()); // 모든 HTTP 응답을 압축하여 전송하도록 설정합니다.
 app.use(cookieParser()); // 요청에서 쿠키를 파싱하여 사용할 수 있도록 설정합니다.
+
+// 에러 핸들러 적용
+app.use(errorHandlerMiddleware);
 
 const server = http.createServer(app); // Express 애플리케이션을 기반으로 HTTP 서버를 생성합니다.
 

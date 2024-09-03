@@ -1,6 +1,7 @@
 import express from "express";
 import { sendEmail } from "../services/emailServices";
 import { getUserByEmail } from "../services/userServices";
+import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 
 // 인증 코드 보내기
 const sendAuthCodeEmail = async (
@@ -39,20 +40,20 @@ const checkExistingEmail = async (
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ message: "이메일 제공해주세요." });
+    throw new BadRequest("이메일을 제공해주세요.");
   }
 
   try {
     const existingEmail = await getUserByEmail(email);
 
     if (existingEmail) {
-      return res.status(409).json({ message: "이미 존재하는 이메일입니다." });
+      throw new DuplicateError("이미 존재하는 이메일입니다.");
     }
 
     res.status(200).json({ message: "사용 가능한 이메일입니다." });
   } catch (error) {
     console.log("Error in checkExistingEmail", error.message);
-    res.status(500).json({ error: error.message });
+    throw new CustomAPIError("내부 에러");
   }
 };
 
