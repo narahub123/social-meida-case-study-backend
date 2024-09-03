@@ -1,15 +1,16 @@
 import express from "express";
 import { sendEmail } from "../services/emailServices";
+import { getUserByEmail } from "../services/userServices";
 
 // 인증 코드 보내기
 const sendAuthCodeEmail = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { username, email, birth } = req.body;
+  const { email } = req.body;
 
   try {
-    // 인증 코드 생성 : 6자리 숫자 문자열 
+    // 인증 코드 생성 : 6자리 숫자 문자열
     const authCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     const subject = "인증코드";
@@ -30,4 +31,29 @@ const sendAuthCodeEmail = async (
   }
 };
 
-export { sendAuthCodeEmail };
+// 이메일 중복확인
+const checkExistingEmail = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "이메일 제공해주세요." });
+  }
+
+  try {
+    const existingEmail = await getUserByEmail(email);
+
+    if (existingEmail) {
+      return res.status(409).json({ message: "이미 존재하는 이메일입니다." });
+    }
+
+    res.status(200).json({ message: "사용 가능한 이메일입니다." });
+  } catch (error) {
+    console.log("Error in checkExistingEmail", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export { sendAuthCodeEmail, checkExistingEmail };
