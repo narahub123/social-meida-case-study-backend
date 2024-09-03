@@ -6,6 +6,10 @@
     // 모듈 해석을 Node로 설정. Node.js에서 모듈을 찾는 방법을 사용.
     "moduleResolution": "NodeNext",
 
+    "resolveJsonModule": true, // JSON 파일을 모듈로 인식하도록 설정
+
+    "esModuleInterop": true, // CommonJS와 ES 모듈 간의 상호 운용성 지원
+
     // 모듈의 기본 경로를 'src'로 설정. import 구문에서 절대 경로를 사용할 수 있게 함.
     "baseUrl": "src",
 

@@ -1,0 +1,167 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Social Media Case Study",
+    "version": "1.0.0",
+    "description": "소셜 미디어 공부를 위한 API documentation"
+  },
+
+  "paths": {
+    "/auth/checkExistingEmail": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "이메일 중복 검사",
+        "description": "회원 가입시 작성한 이메일이 이미 등록된 이메일인지 여부 확인",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "사용 가능한 이메일"
+          },
+          "409": {
+            "description": "이미 존재하는 이메일"
+          },
+          "400": {
+            "description": "이메일이 제공되지 않음"
+          },
+          "500": {
+            "description": "내부 에러"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EmailRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "중복을 검사할 이메일 주소",
+            "example": "example@example.com"
+          }
+        },
+        "required": ["email"]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30,
+            "description": "유저의 이름, 최대 30자까지 허용됩니다."
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "유저의 이메일 주소.",
+            "pattern": "^\\S+@\\S+\\.\\S+$"
+          },
+          "birth": {
+            "type": "string",
+            "description": "유저의 생년월일, YYYYMMDD 형식으로 입력.",
+            "pattern": "^[0-9]{8}$"
+          },
+          "gender": {
+            "type": "string",
+            "description": "유저의 성별, 'm' 또는 'f' 중 하나.",
+            "enum": ["m", "f"]
+          },
+          "password": {
+            "type": "string",
+            "description": "유저의 비밀번호."
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 30,
+            "description": "고유한 유저 식별자, 4자에서 30자 사이여야 합니다.",
+            "pattern": "^[a-z0-9_]{4,30}$"
+          },
+          "userRole": {
+            "type": "string",
+            "description": "유저의 역할, 'ADMIN' 또는 'USER'.",
+            "enum": ["ADMIN", "USER"]
+          },
+          "ip": {
+            "type": "string",
+            "description": "회원가입 시의 IP 주소.",
+            "pattern": "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+          },
+          "location": {
+            "type": "string",
+            "description": "회원가입 시의 주소."
+          },
+          "userPic": {
+            "type": "string",
+            "description": "유저의 프로필 사진 URL.",
+            "default": ""
+          },
+          "userIntro": {
+            "type": "string",
+            "description": "유저의 간단한 소개, 최대 150자.",
+            "maxLength": 150
+          },
+          "following": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "objectId"
+            },
+            "description": "유저가 팔로우하고 있는 다른 유저의 목록.",
+            "default": []
+          },
+          "followers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "objectId"
+            },
+            "description": "유저를 팔로우하고 있는 다른 유저의 목록.",
+            "default": []
+          },
+          "isAuthenticated": {
+            "type": "boolean",
+            "description": "유저가 인증되었는지 여부.",
+            "default": false
+          },
+          "authExpiredAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "인증 코드 만료 시간. 인증되지 않은 경우 필수."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "유저 생성 시간."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "유저 정보가 마지막으로 업데이트된 시간."
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "birth",
+          "gender",
+          "password",
+          "userId",
+          "ip",
+          "location"
+        ]
+      }
+    }
+  }
+}

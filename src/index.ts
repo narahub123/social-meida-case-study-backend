@@ -6,12 +6,18 @@ import cookieParser from "cookie-parser"; // 쿠키를 파싱하기 위한 미�
 import compression from "compression"; // HTTP 응답을 압축하기 위한 미들웨어를 가져옵니다.
 import cors from "cors"; // Cross-Origin Resource Sharing (CORS)을 허용하기 위한 미들웨어를 가져옵니다.
 import mongoose from "mongoose"; // MongoDB와의 연결을 위한 Mongoose 라이브러리를 가져옵니다.
-import router from "./router";
+import routes from "./routes";
 import { errorHandlerMiddleware } from "./middlewares/errorHandlerMiddleware";
+// swagger ui
+import swaggerUI from "swagger-ui-express";
+import swaggerDocument from "../swagger.json";
 
 const PORT = process.env.PORT || 8080; // .env 파일에서 PORT 환경 변수를 가져옵니다.
 
 const app = express(); // Express 애플리케이션 인스턴스를 생성합니다.
+
+// Swagger UI를 express에 통합
+app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 app.use(
   cors({
@@ -38,4 +44,4 @@ mongoose.Promise = Promise; // Mongoose가 사용할 Promise 라이브러리를 
 mongoose.connect(process.env.MONGO_URL); // .env 파일에서 MONGO_URL 환경 변수를 가져와 MongoDB에 연결합니다.
 mongoose.connection.on("error", (error: Error) => console.log(error)); // MongoDB 연결에 오류가 발생하면 콘솔에 오류를 출력합니다.
 
-app.use("/", router());
+app.use("/", routes());
