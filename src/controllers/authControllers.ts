@@ -1,6 +1,6 @@
 import express from "express";
 import { sendEmail } from "../services/emailServices";
-import { getUserByEmail } from "../services/userServices";
+import { getUserByEmail, getUserByUserId } from "../services/userServices";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 
 // 인증 코드 보내기
@@ -57,4 +57,28 @@ const checkExistingEmail = async (
   }
 };
 
-export { sendAuthCodeEmail, checkExistingEmail };
+// 아이디 중복 체크
+const checkExistingUserId = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userId } = req.body;
+  if (!userId) {
+    throw new BadRequest("userId를 제공해주세요.");
+  }
+
+  try {
+    const existingUserId = await getUserByUserId(userId);
+
+    if (existingUserId) {
+      throw new DuplicateError("이미 존재하는 아이디입니다.");
+    }
+
+    res.status(200).json({ message: "사용 가능한 아이디입니다." });
+  } catch (error) {
+    console.log("Error in checkExistingUserId", error.message);
+    throw new CustomAPIError("내부 에러");
+  }
+};
+
+export { sendAuthCodeEmail, checkExistingEmail, checkExistingUserId };

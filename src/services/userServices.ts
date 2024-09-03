@@ -9,4 +9,13 @@ const getUserByEmail = async (email: string) => {
   }
 };
 
-export { getUserByEmail };
+// 아이디로 유저 정보 확인하기
+const getUserByUserId = async (userId: string) => {
+  try {
+    return await User.findOne({ userId });
+  } catch (error) {
+    throw error;
+  }
+};
+
+export { getUserByEmail, getUserByUserId };
