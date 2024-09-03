@@ -37,6 +37,37 @@
           }
         }
       }
+    },
+    "/auth/checkExistingUserId": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "아이디 중복 검사",
+        "description": "회원 가입시 작성한 아이디가 이미 등록된 아이디인지 여부 확인",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "사용 가능한 아이디"
+          },
+          "409": {
+            "description": "이미 존재하는 아이디"
+          },
+          "400": {
+            "description": "아이디이 제공되지 않음"
+          },
+          "500": {
+            "description": "내부 에러"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -51,6 +82,17 @@
           }
         },
         "required": ["email"]
+      },
+      "UserIdRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "중복 검사할 아이디",
+            "example": "playground"
+          }
+        },
+        "required": ["userId"]
       },
       "User": {
         "type": "object",
