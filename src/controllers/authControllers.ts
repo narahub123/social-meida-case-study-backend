@@ -1,6 +1,10 @@
 import express from "express";
 import { sendEmail } from "../services/emailServices";
-import { getUserByEmail, getUserByUserId } from "../services/userServices";
+import {
+  getUserByEmail,
+  getUserByUserId,
+  saveUser,
+} from "../services/userServices";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import { createAuthCode, createHashedPassword } from "../utils/auth";
 import { saveImageToCloudinary } from "../utils/cloudinary";
@@ -144,9 +148,23 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
 
     let userPic = "";
     // 이미지 url이 전송된 경우 이미지를 cloudinary에 저장하고 url을 가져옴
-    // if (imgUrl) {
-    //   userPic = await saveImageToCloudinary(imgUrl);
-    // }
+    if (imgUrl) {
+      userPic = await saveImageToCloudinary(imgUrl);
+    }
+
+    // 정보 저장하고 이메일 전송하기
+    const user = await saveUser(
+      username,
+      email,
+      birth,
+      hashedPassword,
+      userId,
+      userPic
+    );
+
+    if (!user) {
+      throw new BadRequest(`회원 가입 실패`);
+    }
 
     // 이메일 전송
     // 인증 번호 생성하기
@@ -160,9 +178,12 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
     if (!info) {
       throw new BadRequest(`이메일 전송 실패`);
     }
-    
+
+    res.status(201).json({ message: "회원 가입 성공" });
   } catch (error) {
-    console.log(error);
+    console.log("Error in cretedUser", error.message);
+
+    throw new CustomAPIError("내부 에러");
   }
 };
 export {

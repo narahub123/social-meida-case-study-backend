@@ -18,4 +18,29 @@ const getUserByUserId = async (userId: string) => {
   }
 };
 
-export { getUserByEmail, getUserByUserId };
+// 유저 저장하기
+const saveUser = async (
+  username: string,
+  email: string,
+  birth: string,
+  hashedPassword: string,
+  userId: string,
+  userPic: string
+) => {
+  try {
+    const newUser = new User({
+      username,
+      email,
+      birth,
+      password: hashedPassword,
+      userId,
+      userPic,
+    });
+
+    return newUser.save();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export { getUserByEmail, getUserByUserId, saveUser };
