@@ -2,7 +2,7 @@ import express from "express";
 import { sendEmail } from "../services/emailServices";
 import { getUserByEmail, getUserByUserId } from "../services/userServices";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
-import { createHashedPassword } from "../utils/auth";
+import { createAuthCode, createHashedPassword } from "../utils/auth";
 import { saveImageToCloudinary } from "../utils/cloudinary";
 
 // 인증 코드 보내기
@@ -14,7 +14,7 @@ const sendAuthCodeEmail = async (
 
   try {
     // 인증 코드 생성 : 6자리 숫자 문자열
-    const authCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const authCode = createAuthCode();
 
     const subject = "인증코드";
     const html = `<p>인증코드 ${authCode}</p>`;
@@ -144,11 +144,23 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
 
     let userPic = "";
     // 이미지 url이 전송된 경우 이미지를 cloudinary에 저장하고 url을 가져옴
-    if (imgUrl) {
-      userPic = await saveImageToCloudinary(imgUrl);
-    }
+    // if (imgUrl) {
+    //   userPic = await saveImageToCloudinary(imgUrl);
+    // }
 
-    console.log(userPic);
+    // 이메일 전송
+    // 인증 번호 생성하기
+    const authCode = createAuthCode();
+    // 제목
+    const subject = "PlayGround 인증코드";
+    // 내용
+    const html = `<p>PlayGround 인증코드 : ${authCode}</p>`;
+    const info = await sendEmail(email, subject, html);
+    console.log(info);
+    if (!info) {
+      throw new BadRequest(`이메일 전송 실패`);
+    }
+    
   } catch (error) {
     console.log(error);
   }
