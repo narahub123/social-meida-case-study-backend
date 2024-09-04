@@ -3,6 +3,7 @@ import { sendEmail } from "../services/emailServices";
 import { getUserByEmail, getUserByUserId } from "../services/userServices";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import { createHashedPassword } from "../utils/auth";
+import { saveImageToCloudinary } from "../utils/cloudinary";
 
 // 인증 코드 보내기
 const sendAuthCodeEmail = async (
@@ -138,8 +139,16 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
   // );
 
   try {
+    // 비밀번호 해싱
     const hashedPassword = await createHashedPassword(password);
-    
+
+    let userPic = "";
+    // 이미지 url이 전송된 경우 이미지를 cloudinary에 저장하고 url을 가져옴
+    if (imgUrl) {
+      userPic = await saveImageToCloudinary(imgUrl);
+    }
+
+    console.log(userPic);
   } catch (error) {
     console.log(error);
   }

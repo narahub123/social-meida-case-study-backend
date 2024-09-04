@@ -11,6 +11,14 @@ import { errorHandlerMiddleware } from "./middlewares/errorHandlerMiddleware";
 // swagger ui
 import swaggerUI from "swagger-ui-express";
 import swaggerDocument from "../swagger.json";
+// cloudinary 이미지 처리
+import { v2 as cloudinary } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const PORT = process.env.PORT || 8080; // .env 파일에서 PORT 환경 변수를 가져옵니다.
 
