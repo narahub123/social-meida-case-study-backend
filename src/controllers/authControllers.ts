@@ -81,4 +81,69 @@ const checkExistingUserId = async (
   }
 };
 
-export { sendAuthCodeEmail, checkExistingEmail, checkExistingUserId };
+const creatNewUser = async (req: express.Request, res: express.Response) => {
+  const { username, email, birth, password, userId, imgUrl, alarms, language } =
+    req.body;
+
+  // body로부터 받은 데이터가 다 있는지 확인
+  // imgUrl은 선택사항이기 때문에 제외
+  if (
+    !username ||
+    !email ||
+    !birth ||
+    !password ||
+    !userId ||
+    !alarms ||
+    !language
+  ) {
+    const missingsArr = [];
+
+    if (!username) {
+      missingsArr.push("username");
+    }
+    if (!email) {
+      missingsArr.push("email");
+    }
+    if (!birth) {
+      missingsArr.push("birth");
+    }
+    if (!password) {
+      missingsArr.push("password");
+    }
+    if (!userId) {
+      missingsArr.push("userId");
+    }
+    if (!alarms) {
+      missingsArr.push("alarms");
+    }
+    if (!language) {
+      missingsArr.push("language");
+    }
+
+    const missings = missingsArr.join(", ");
+
+    throw new BadRequest(`${missings}에 대한 정보를 제공해주세요.`);
+  }
+
+  console.log(
+    username,
+    email,
+    birth,
+    password,
+    userId,
+    imgUrl,
+    alarms,
+    language
+  );
+  
+  try {
+
+
+  } catch (error) {}
+};
+export {
+  sendAuthCodeEmail,
+  checkExistingEmail,
+  checkExistingUserId,
+  creatNewUser,
+};
