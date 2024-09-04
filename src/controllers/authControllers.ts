@@ -2,6 +2,7 @@ import express from "express";
 import { sendEmail } from "../services/emailServices";
 import { getUserByEmail, getUserByUserId } from "../services/userServices";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
+import { createHashedPassword } from "../utils/auth";
 
 // 인증 코드 보내기
 const sendAuthCodeEmail = async (
@@ -125,21 +126,23 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
     throw new BadRequest(`${missings}에 대한 정보를 제공해주세요.`);
   }
 
-  console.log(
-    username,
-    email,
-    birth,
-    password,
-    userId,
-    imgUrl,
-    alarms,
-    language
-  );
-  
+  // console.log(
+  //   username,
+  //   email,
+  //   birth,
+  //   password,
+  //   userId,
+  //   imgUrl,
+  //   alarms,
+  //   language
+  // );
+
   try {
-
-
-  } catch (error) {}
+    const hashedPassword = await createHashedPassword(password);
+    
+  } catch (error) {
+    console.log(error);
+  }
 };
 export {
   sendAuthCodeEmail,
