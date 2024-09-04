@@ -89,14 +89,14 @@ const UserSchema = new mongoose.Schema(
 
     // 팔로잉
     following: {
-      type: [mongoose.Schema.Types.ObjectId],
+      type: [String],
       ref: "User",
       default: [],
     },
 
     // 팔로워
     followers: {
-      type: [mongoose.Schema.Types.ObjectId],
+      type: [String],
       ref: "User",
       default: [],
     },
