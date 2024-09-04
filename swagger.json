@@ -203,6 +203,68 @@
           "ip",
           "location"
         ]
+      },
+      "UserSettings": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "사용자의 고유 식별자",
+            "example": "5f8f8c44b54764421b7156c5"
+          },
+          "screenMode": {
+            "type": "string",
+            "enum": ["light", "dark"],
+            "default": "light",
+            "description": "화면 모드, 밝거나 어두운 모드 중 선택"
+          },
+          "alarm": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "boolean",
+                "default": false,
+                "description": "새 메시지가 도착했을 때 알림을 받을지 여부"
+              },
+              "comment": {
+                "type": "boolean",
+                "default": false,
+                "description": "새 댓글이 달렸을 때 알림을 받을지 여부"
+              },
+              "following": {
+                "type": "boolean",
+                "default": false,
+                "description": "새로운 팔로워가 생겼을 때 알림을 받을지 여부"
+              },
+              "newPost": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "팔로우 중인 사용자의 새로운 포스트에 대한 알림을 받을지 여부"
+              }
+            },
+            "description": "여러 알림 설정"
+          },
+          "language": {
+            "type": "string",
+            "enum": ["Korean", "English"],
+            "default": "Korean",
+            "description": "사용자의 기본 언어 설정"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "사용자 설정이 생성된 시간"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "사용자 설정이 마지막으로 수정된 시간"
+          }
+        },
+        "required": ["userId", "screenMode", "alarm", "language"],
+        "description": "사용자별 설정 스키마"
       }
     }
   }
