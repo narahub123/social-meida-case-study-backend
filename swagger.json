@@ -237,10 +237,8 @@
                 "description": "새로운 팔로워가 생겼을 때 알림을 받을지 여부"
               },
               "newPost": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
+                "type": "boolean",
+                "default": false,
                 "description": "팔로우 중인 사용자의 새로운 포스트에 대한 알림을 받을지 여부"
               }
             },
