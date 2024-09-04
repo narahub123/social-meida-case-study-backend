@@ -6,7 +6,7 @@ const UserSchema = new mongoose.Schema(
     username: {
       type: String,
       minLength: 1,
-      maxLength: [30, "too long for username. Must be at most 30."],
+      maxLength: [30, "사용자 이름은 최대 30자까지 입력할 수 있습니다."],
       required: true,
       match: /^.{1,30}$/,
     },
@@ -16,7 +16,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      match: [/^\S+@\S+\.\S+$/, "Invalid email format"], // 이메일 유효성 검사
+      match: [/^\S+@\S+\.\S+$/, "유효하지 않은 이메일 형식입니다."], // 이메일 유효성 검사
     },
 
     // 생년월일
@@ -24,14 +24,14 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      match: /^[0-9]{8}$/,
+      match: /^[0-9]{8}$/, // YYYYMMDD 형식의 생년월일
     },
 
     // 성별
     gender: {
       type: String,
       required: true,
-      enum: ["m", "f"],
+      enum: ["m", "f"], // 성별 값: 남성(m) 또는 여성(f)
     },
 
     // 비밀번호
@@ -40,31 +40,35 @@ const UserSchema = new mongoose.Schema(
       required: true,
     },
 
-    // 주소
+    // 사용자 ID
     userId: {
       type: String,
       required: true,
       unique: true,
-      minLength: [4, "too short for userId. Must be at least 4."],
-      maxLength: [30, "too long for userId. Must be at most 30."],
-      match: /^[a-z0-9_]{4,30}$/,
+      minLength: [4, "사용자 ID는 최소 4자 이상이어야 합니다."],
+      maxLength: [30, "사용자 ID는 최대 30자까지 입력할 수 있습니다."],
+      match: /^[a-z0-9_]{4,30}$/, // 소문자, 숫자 및 밑줄(_)만 허용
       lowercase: true,
     },
 
     // 사용자 등급
     userRole: {
       type: String,
-      enum: { values: ["ADMIN", "USER"], message: `{VALUE} is not supported` },
-      default: "USER",
+      enum: {
+        values: ["ADMIN", "USER"],
+        message: `{VALUE}는 지원되지 않는 사용자 등급입니다.`,
+      },
+      default: "USER", // 기본값은 "USER"
       uppercase: true,
     },
-    // 가입시 IP address
+
+    // 가입시 IP 주소
     ip: {
       type: String,
       required: true,
       match: [
         /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
-        "Invalid IP address format",
+        "유효하지 않은 IP 주소 형식입니다.",
       ], // IP 주소 유효성 검사
     },
 
@@ -84,17 +88,17 @@ const UserSchema = new mongoose.Schema(
     userIntro: {
       type: String,
       default: "",
-      maxLength: [150, "too long for userIntro. Must be at most 150"],
+      maxLength: [150, "프로필 설명은 최대 150자까지 입력할 수 있습니다."],
     },
 
-    // 팔로잉
+    // 팔로잉 목록
     following: {
       type: [String],
       ref: "User",
       default: [],
     },
 
-    // 팔로워
+    // 팔로워 목록
     followers: {
       type: [String],
       ref: "User",
@@ -122,7 +126,14 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-// TTL 인덱스 설정(expiredAt 필드가 현재 시간보다 이전이면 문서 자체가 자동으로 삭제됨)
-UserSchema.index({ authExpiredAt: 1 }, { expireAfterSeconds: 0 });
+// 후처리 훅을 사용하여 authExpiredAt 필드 설정
+UserSchema.pre("save", function (next) {
+  if (this.isNew && !this.isAuthenticated) {
+    this.authExpiredAt = new Date(Date.now() + 10 * 60 * 1000); // 현재 시간의 10분 뒤
+  }
+  next();
+});
+
+
 
 export const User = mongoose.model("User", UserSchema);
