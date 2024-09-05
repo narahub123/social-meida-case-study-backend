@@ -40,9 +40,6 @@ app.use(express.urlencoded({ limit: "10mb", extended: true })); // URL-encoded �
 app.use(compression()); // 모든 HTTP 응답을 압축하여 전송하도록 설정합니다.
 app.use(cookieParser()); // 요청에서 쿠키를 파싱하여 사용할 수 있도록 설정합니다.
 
-// 에러 핸들러 적용
-app.use(errorHandlerMiddleware);
-
 const server = http.createServer(app); // Express 애플리케이션을 기반으로 HTTP 서버를 생성합니다.
 
 server.listen(PORT, () => {
@@ -55,3 +52,6 @@ mongoose.connect(process.env.MONGO_URL); // .env 파일에서 MONGO_URL 환경 �
 mongoose.connection.on("error", (error: Error) => console.log(error)); // MongoDB 연결에 오류가 발생하면 콘솔에 오류를 출력합니다.
 
 app.use("/", routes());
+
+// 에러 핸들러 적용
+app.use(errorHandlerMiddleware);

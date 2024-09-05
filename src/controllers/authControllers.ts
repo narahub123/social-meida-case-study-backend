@@ -1,4 +1,4 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { sendEmail } from "../services/emailServices";
 import {
   getUserByEmail,
@@ -9,6 +9,7 @@ import { saveUserSettings } from "../services/userSettingsServices";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import { createAuthCode, createHashedPassword } from "../utils/auth";
 import { saveImageToCloudinary } from "../utils/cloudinary";
+import { asyncWrapper } from "../middlewares/asyncWrapper";
 
 // 인증 코드 보내기
 const sendAuthCodeEmail = async (
@@ -40,17 +41,15 @@ const sendAuthCodeEmail = async (
 };
 
 // 이메일 중복확인
-const checkExistingEmail = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  const { email } = req.body;
+const checkExistingEmail = asyncWrapper(
+  "checkExistingEmail",
+  async (req: express.Request, res: express.Response) => {
+    const { email } = req.body;
 
-  if (!email) {
-    throw new BadRequest("이메일을 제공해주세요.");
-  }
+    if (!email) {
+      throw new BadRequest("이메일을 제공해주세요.");
+    }
 
-  try {
     const existingEmail = await getUserByEmail(email);
 
     if (existingEmail) {
@@ -58,23 +57,18 @@ const checkExistingEmail = async (
     }
 
     res.status(200).json({ message: "사용 가능한 이메일입니다." });
-  } catch (error) {
-    console.log("Error in checkExistingEmail", error.message);
-    throw new CustomAPIError("내부 에러");
   }
-};
+);
 
 // 아이디 중복 체크
-const checkExistingUserId = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  const { userId } = req.body;
-  if (!userId) {
-    throw new BadRequest("userId를 제공해주세요.");
-  }
+const checkExistingUserId = asyncWrapper(
+  "checkExistingUserId",
+  async (req: express.Request, res: express.Response) => {
+    const { userId } = req.body;
+    if (!userId) {
+      throw new BadRequest("userId를 제공해주세요.");
+    }
 
-  try {
     const existingUserId = await getUserByUserId(userId);
 
     if (existingUserId) {
@@ -82,89 +76,89 @@ const checkExistingUserId = async (
     }
 
     res.status(200).json({ message: "사용 가능한 아이디입니다." });
-  } catch (error) {
-    console.log("Error in checkExistingUserId", error.message);
-    throw new CustomAPIError("내부 에러");
   }
-};
+);
 
 // 유저 생성
-const creatNewUser = async (req: express.Request, res: express.Response) => {
-  const {
-    username,
-    email,
-    birth,
-    password,
-    userId,
-    imgUrl,
-    alarms,
-    language,
-    gender,
-    location,
-    ip,
-  } = req.body;
+const creatNewUser = asyncWrapper(
+  "creatNewUser",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const {
+      username,
+      email,
+      birth,
+      password,
+      userId,
+      imgUrl,
+      alarms,
+      language,
+      gender,
+      location,
+      ip,
+    } = req.body;
 
-  // body로부터 받은 데이터가 다 있는지 확인
-  // imgUrl은 선택사항이기 때문에 제외
-  if (
-    !username ||
-    !email ||
-    !birth ||
-    !password ||
-    !userId ||
-    !alarms ||
-    !language ||
-    !location ||
-    !ip
-  ) {
-    const missingsArr = [];
+    // body로부터 받은 데이터가 다 있는지 확인
+    // imgUrl은 선택사항이기 때문에 제외
+    if (
+      !username ||
+      !email ||
+      !birth ||
+      !password ||
+      !userId ||
+      !alarms ||
+      !language ||
+      !location ||
+      !ip
+    ) {
+      const missingsArr = [];
 
-    if (!username) {
-      missingsArr.push("username");
-    }
-    if (!email) {
-      missingsArr.push("email");
-    }
-    if (!birth) {
-      missingsArr.push("birth");
-    }
-    if (!password) {
-      missingsArr.push("password");
-    }
-    if (!userId) {
-      missingsArr.push("userId");
-    }
-    if (!alarms) {
-      missingsArr.push("alarms");
-    }
-    if (!language) {
-      missingsArr.push("language");
-    }
-    if (!location) {
-      missingsArr.push("language");
-    }
-    if (!ip) {
-      missingsArr.push("language");
+      if (!username) {
+        missingsArr.push("username");
+      }
+      if (!email) {
+        missingsArr.push("email");
+      }
+      if (!birth) {
+        missingsArr.push("birth");
+      }
+      if (!password) {
+        missingsArr.push("password");
+      }
+      if (!userId) {
+        missingsArr.push("userId");
+      }
+      if (!alarms) {
+        missingsArr.push("alarms");
+      }
+      if (!language) {
+        missingsArr.push("language");
+      }
+      if (!location) {
+        missingsArr.push("location");
+      }
+      if (!ip) {
+        missingsArr.push("ip");
+      }
+
+      const missings = missingsArr.join(", ");
+
+      throw new BadRequest(`${missings}에 대한 정보를 제공해주세요.`);
     }
 
-    const missings = missingsArr.join(", ");
+    // 동일한 이메일 혹은 아이디 존재 여부 확인
+    const duplicateEmailUser = await getUserByEmail(email);
 
-    throw new BadRequest(`${missings}에 대한 정보를 제공해주세요.`);
-  }
+    if (duplicateEmailUser) {
+      // return res.status(409).json({ message: "이미 존재하는 이메일입니다." });
+      throw new DuplicateError("이미 존재하는 아이디입니다.");
+    }
 
-  // console.log(
-  //   username,
-  //   email,
-  //   birth,
-  //   password,
-  //   userId,
-  //   imgUrl,
-  //   alarms,
-  //   language,
-  // gender, ip, location,
-  // );
+    const duplicateUserIdUser = await getUserByUserId(userId);
 
-  try {
+    if (duplicateUserIdUser) {
+      return res.status(409).json({ message: "이미 존재하는 아이디입니다." });
+    }
+
     // 비밀번호 해싱
     const hashedPassword = await createHashedPassword(password);
 
@@ -212,12 +206,8 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
     }
 
     res.status(201).json({ message: "회원 가입 성공" });
-  } catch (error) {
-    console.log("Error in cretedUser", error.message);
-
-    throw new CustomAPIError("내부 에러");
   }
-};
+);
 
 export {
   sendAuthCodeEmail,

@@ -21,6 +21,7 @@ const UserSettingsSchema = new mongoose.Schema(
       type: String,
       ref: "User",
       required: true,
+      unique: true,
     },
     // 밝은 화면 / 어두운 화면
     screenMode: {

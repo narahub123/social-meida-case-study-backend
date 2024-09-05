@@ -1,11 +1,11 @@
-import express from "express";
-import { CustomAPIError } from "../errors";
+import { CustomAPIError } from "errors";
+import { NextFunction, Request, Response } from "express";
 
 export const errorHandlerMiddleware = (
-  err: CustomAPIError,
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
+  err: CustomAPIError | any,
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "내부 에러";
@@ -16,5 +16,11 @@ export const errorHandlerMiddleware = (
     });
   }
 
-  return res.status(statusCode).json({ message });
+  if (err.code && err.code === 11000) {
+    console.log(err);
+
+    res.status(409).json({ message: "중복된 데이터가 있습니다." });
+  }
+
+  res.status(statusCode).json({ message });
 };
