@@ -25,7 +25,10 @@ const saveUser = async (
   birth: string,
   hashedPassword: string,
   userId: string,
-  userPic: string
+  userPic: string,
+  gender: string,
+  location: string,
+  ip: string
 ) => {
   try {
     const newUser = new User({
@@ -35,6 +38,9 @@ const saveUser = async (
       password: hashedPassword,
       userId,
       userPic,
+      gender,
+      location,
+      ip,
     });
 
     return newUser.save();

@@ -34,7 +34,9 @@ app.use(
   })
 );
 
-app.use(express.json());
+// app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // JSON 요청 크기 제한을 10MB로 설정
+app.use(express.urlencoded({ limit: "10mb", extended: true })); // URL-encoded 요청 크기 제한
 app.use(compression()); // 모든 HTTP 응답을 압축하여 전송하도록 설정합니다.
 app.use(cookieParser()); // 요청에서 쿠키를 파싱하여 사용할 수 있도록 설정합니다.
 

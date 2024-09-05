@@ -87,9 +87,21 @@ const checkExistingUserId = async (
   }
 };
 
+// 유저 생성
 const creatNewUser = async (req: express.Request, res: express.Response) => {
-  const { username, email, birth, password, userId, imgUrl, alarms, language } =
-    req.body;
+  const {
+    username,
+    email,
+    birth,
+    password,
+    userId,
+    imgUrl,
+    alarms,
+    language,
+    gender,
+    location,
+    ip,
+  } = req.body;
 
   // body로부터 받은 데이터가 다 있는지 확인
   // imgUrl은 선택사항이기 때문에 제외
@@ -100,7 +112,9 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
     !password ||
     !userId ||
     !alarms ||
-    !language
+    !language ||
+    !location ||
+    !ip
   ) {
     const missingsArr = [];
 
@@ -125,6 +139,12 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
     if (!language) {
       missingsArr.push("language");
     }
+    if (!location) {
+      missingsArr.push("language");
+    }
+    if (!ip) {
+      missingsArr.push("language");
+    }
 
     const missings = missingsArr.join(", ");
 
@@ -139,7 +159,8 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
   //   userId,
   //   imgUrl,
   //   alarms,
-  //   language
+  //   language,
+  // gender, ip, location,
   // );
 
   try {
@@ -159,7 +180,10 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
       birth,
       hashedPassword,
       userId,
-      userPic
+      userPic,
+      gender,
+      location,
+      ip
     );
 
     if (!user) {
@@ -186,6 +210,7 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
     throw new CustomAPIError("내부 에러");
   }
 };
+
 export {
   sendAuthCodeEmail,
   checkExistingEmail,
