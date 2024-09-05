@@ -5,6 +5,7 @@ import {
   getUserByUserId,
   saveUser,
 } from "../services/userServices";
+import { saveUserSettings } from "../services/userSettingsServices";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import { createAuthCode, createHashedPassword } from "../utils/auth";
 import { saveImageToCloudinary } from "../utils/cloudinary";
@@ -167,6 +168,7 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
     // 비밀번호 해싱
     const hashedPassword = await createHashedPassword(password);
 
+    // 이미지 저장
     let userPic = "";
     // 이미지 url이 전송된 경우 이미지를 cloudinary에 저장하고 url을 가져옴
     if (imgUrl) {
@@ -188,6 +190,12 @@ const creatNewUser = async (req: express.Request, res: express.Response) => {
 
     if (!user) {
       throw new BadRequest(`회원 가입 실패`);
+    }
+
+    const userSettings = await saveUserSettings(userId, alarms, language);
+
+    if (!userSettings) {
+      throw new BadRequest("회원 가입이 실패했습니다.");
     }
 
     // 이메일 전송
