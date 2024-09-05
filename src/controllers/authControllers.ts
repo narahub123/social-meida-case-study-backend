@@ -105,8 +105,6 @@ const creatNewUser = asyncWrapper(
       !birth ||
       !password ||
       !userId ||
-      !alarms ||
-      !language ||
       !location ||
       !ip
     ) {
@@ -126,12 +124,6 @@ const creatNewUser = asyncWrapper(
       }
       if (!userId) {
         missingsArr.push("userId");
-      }
-      if (!alarms) {
-        missingsArr.push("alarms");
-      }
-      if (!language) {
-        missingsArr.push("language");
       }
       if (!location) {
         missingsArr.push("location");
