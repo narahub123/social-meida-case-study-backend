@@ -145,7 +145,7 @@ const creatNewUser = asyncWrapper(
       throw new BadRequest(`${missings}에 대한 정보를 제공해주세요.`);
     }
 
-    // 동일한 이메일 혹은 아이디 존재 여부 확인
+    // 동일한 이메일 존재 여부 확인
     const duplicateEmailUser = await getUserByEmail(email);
 
     if (duplicateEmailUser) {
@@ -153,6 +153,7 @@ const creatNewUser = asyncWrapper(
       throw new DuplicateError("이미 존재하는 아이디입니다.");
     }
 
+    // 동일한 아이디 존재 여부 확인
     const duplicateUserIdUser = await getUserByUserId(userId);
 
     if (duplicateUserIdUser) {
@@ -200,7 +201,7 @@ const creatNewUser = asyncWrapper(
     // 내용
     const html = `<p>PlayGround 인증코드 : ${authCode}</p>`;
     const info = await sendEmail(email, subject, html);
-    console.log(info);
+
     if (!info) {
       throw new BadRequest(`이메일 전송 실패`);
     }
