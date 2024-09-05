@@ -31,7 +31,7 @@ const UserSchema = new mongoose.Schema(
     gender: {
       type: String,
       required: true,
-      enum: ["m", "f"], // 성별 값: 남성(m) 또는 여성(f)
+      enum: ["m", "f", "b", "h"], // 성별 값: 남성(m) 또는 여성(f) 양성(b), 숨김(h)
     },
 
     // 비밀번호
