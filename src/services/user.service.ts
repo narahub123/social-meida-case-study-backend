@@ -49,4 +49,15 @@ const saveUser = async (
   }
 };
 
-export { getUserByEmail, getUserByUserId, saveUser };
+// 인증 여부 업데이트
+const updateIsAuthenticated = async (
+  userId: string,
+  isAuthenticated: boolean
+) => {
+  try {
+    return await User.updateOne({ userId }, { $set: { isAuthenticated } });
+  } catch (error) {
+    throw error;
+  }
+};
+export { getUserByEmail, getUserByUserId, saveUser, updateIsAuthenticated };

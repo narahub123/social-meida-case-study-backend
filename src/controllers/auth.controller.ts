@@ -4,13 +4,14 @@ import {
   getUserByEmail,
   getUserByUserId,
   saveUser,
-} from "../services/userServices";
+  updateIsAuthenticated,
+} from "../services/user.service";
 import { saveUserSettings } from "../services/userSettingsServices";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import { createAuthCode, createHashedPassword } from "../utils/auth";
 import { saveImageToCloudinary } from "../utils/cloudinary";
 import { asyncWrapper } from "../middlewares/asyncWrapper";
-import { saveAuthCode } from "../services/auth.service";
+import { fetchAuthByUserId, saveAuthCode } from "../services/auth.service";
 
 // 인증 코드 보내기
 const sendAuthCodeEmail = async (
@@ -211,9 +212,42 @@ const creatNewUser = asyncWrapper(
   }
 );
 
+// 인증 번호 확인하기
+const verifyAuthCode = asyncWrapper(
+  "verifyAuthCode",
+  async (req: Request, res: Response) => {
+    const { authCode, userId, email } = req.query;
+
+    const auth = await fetchAuthByUserId(userId.toString());
+
+    if (!auth) {
+      return res.status(404).json({ message: "인증 만료", success: "expired" });
+    }
+
+    if (auth.authCode !== authCode.toString()) {
+      return res
+        .status(400)
+        .json({ message: "잘못된 인증 코드", success: "bad request" });
+    }
+
+    const user = await updateIsAuthenticated(userId.toString(), true);
+
+    if (user.modifiedCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "미등록 가입자", success: "unregistered" });
+    }
+
+    console.log(user);
+
+    return res.status(200).json({ message: "인증 성공", success: "ok" });
+  }
+);
+
 export {
   sendAuthCodeEmail,
   checkExistingEmail,
   checkExistingUserId,
   creatNewUser,
+  verifyAuthCode,
 };

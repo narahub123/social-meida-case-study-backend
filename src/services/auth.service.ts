@@ -13,4 +13,13 @@ const saveAuthCode = async (userId: string, authCode: string) => {
   }
 };
 
-export { saveAuthCode };
+// userId로 인증 불러오기
+const fetchAuthByUserId = async (userId: string) => {
+  try {
+    return Auth.findOne({ userId });
+  } catch (error) {
+    throw error;
+  }
+};
+
+export { saveAuthCode, fetchAuthByUserId };
