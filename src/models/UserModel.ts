@@ -115,9 +115,9 @@ const UserSchema = new mongoose.Schema(
     authExpiredAt: {
       type: Date,
       // 조건부 required : isAuthenticated가 false인 경우에는 필수 true인 경우에는 불필요
-      required: function () {
-        return this.isAuthenticated === false;
-      },
+      // required: function () {
+      //   return this.isAuthenticated === false;
+      // },
     },
   },
   {
@@ -133,7 +133,5 @@ UserSchema.pre("save", function (next) {
   }
   next();
 });
-
-
 
 export const User = mongoose.model("User", UserSchema);
