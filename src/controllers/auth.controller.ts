@@ -10,6 +10,7 @@ import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import { createAuthCode, createHashedPassword } from "../utils/auth";
 import { saveImageToCloudinary } from "../utils/cloudinary";
 import { asyncWrapper } from "../middlewares/asyncWrapper";
+import { saveAuthCode } from "../services/auth.service";
 
 // 인증 코드 보내기
 const sendAuthCodeEmail = async (
@@ -188,10 +189,18 @@ const creatNewUser = asyncWrapper(
     // 이메일 전송
     // 인증 번호 생성하기
     const authCode = createAuthCode();
+
+    // 인증 번호 저장하고 만료시간 가져오기
+    const auth = await saveAuthCode(userId, authCode);
+
+    if (!auth) {
+      throw new BadRequest("인증 코드 등록에 실패했습니다.");
+    }
+
     // 제목
     const subject = "PlayGround 인증코드";
     // 내용
-    const html = `<p>PlayGround 인증코드 : ${authCode}</p>`;
+    const html = `<div><p>PlayGround 인증코드 : ${authCode}</p><p>인증 코드는 ${auth.authExpiredAt}에 만료됩니다.</p></div>`;
     const info = await sendEmail(email, subject, html);
 
     if (!info) {

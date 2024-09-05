@@ -21,11 +21,11 @@ const AuthSchema = new mongoose.Schema(
 );
 
 // createdAt의 10분 뒤에 인증 코드가 만료됨
-AuthSchema.pre("save", function (next) {
+// 'validate' 미들웨어로 변경하여 유효성 검사 전에 authExpiredAt 설정
+AuthSchema.pre("validate", function (next) {
   if (!this.authExpiredAt) {
-    this.authExpiredAt = new Date(this.createdAt.getTime() + 10 * 60000); // 10분
+    this.authExpiredAt = new Date(Date.now() + 10 * 60000); // 10분 후
   }
-
   next();
 });
 

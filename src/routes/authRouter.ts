@@ -3,7 +3,7 @@ import {
   sendAuthCodeEmail,
   checkExistingUserId,
   creatNewUser,
-} from "../controllers/authControllers";
+} from "../controllers/auth.controller";
 import express from "express";
 
 export default (router: express.Router) => {
