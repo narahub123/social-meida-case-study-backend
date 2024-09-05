@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 8080; // .env 파일에서 PORT 환경 변수�
 const app = express(); // Express 애플리케이션 인스턴스를 생성합니다.
 
 // Swagger UI를 express에 통합
-app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
+app.use("/swagger", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 app.use(
   cors({
