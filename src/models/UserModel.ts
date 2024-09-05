@@ -110,28 +110,11 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-
-    // 인증 코드 만료 시간
-    authExpiredAt: {
-      type: Date,
-      // 조건부 required : isAuthenticated가 false인 경우에는 필수 true인 경우에는 불필요
-      // required: function () {
-      //   return this.isAuthenticated === false;
-      // },
-    },
   },
   {
     timestamps: true,
     versionKey: false,
   }
 );
-
-// 후처리 훅을 사용하여 authExpiredAt 필드 설정
-UserSchema.pre("save", function (next) {
-  if (this.isNew && !this.isAuthenticated) {
-    this.authExpiredAt = new Date(Date.now() + 10 * 60 * 1000); // 현재 시간의 10분 뒤
-  }
-  next();
-});
 
 export const User = mongoose.model("User", UserSchema);
