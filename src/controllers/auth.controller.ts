@@ -296,7 +296,9 @@ const normalLogin = asyncWrapper(
     }
 
     if (!user) {
-      return res.status(404).json({ message: "가입자가 없습니다." });
+      return res
+        .status(404)
+        .json({ message: "가입자가 없습니다.", success: "unregistered" });
     }
 
     if (!user.isAuthenticated) {
