@@ -246,7 +246,9 @@ const sendAuthCodeEmail = asyncWrapper(
     }
 
     if (!user) {
-      return res.status(404).json({ message: "가입자 없음" });
+      return res
+        .status(404)
+        .json({ message: "가입자 없음", success: "unregistered" });
     }
 
     // 이메일 전송
