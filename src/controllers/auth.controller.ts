@@ -189,7 +189,20 @@ const verifyAuthCode = asyncWrapper(
   async (req: Request, res: Response) => {
     const { authCode, userId, email } = req.query;
 
-    const auth = await fetchAuthByUserId(userId.toString());
+    let auth;
+    if (userId) {
+      auth = await fetchAuthByUserId(userId.toString());
+    } else if (email) {
+      const user = await getUserByEmail(email.toString());
+
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: "가입자가 없습니다.", success: "unregistered" });
+      }
+
+      auth = await fetchAuthByUserId(userId.toString());
+    }
 
     if (!auth) {
       return res.status(404).json({ message: "인증 만료", success: "expired" });
