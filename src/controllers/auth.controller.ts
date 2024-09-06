@@ -13,35 +13,6 @@ import { saveImageToCloudinary } from "../utils/cloudinary";
 import { asyncWrapper } from "../middlewares/asyncWrapper";
 import { fetchAuthByUserId, saveAuthCode } from "../services/auth.service";
 
-// 인증 코드 보내기
-const sendAuthCodeEmail = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  const { email } = req.body;
-
-  try {
-    // 인증 코드 생성 : 6자리 숫자 문자열
-    const authCode = createAuthCode();
-
-    const subject = "인증코드";
-    const html = `<p>인증코드 ${authCode}</p>`;
-
-    let info = await sendEmail(email, subject, html);
-
-    if (!info) {
-      return res.status(400).json({ error: "이메일 전송 에러" });
-    }
-
-    // 이메일 정보를 db에 저장할 때 createAt를 이용해서 expiredAt을 생성하고 저장함
-
-    // 리턴 값에 인증 코드와 종료 시간을 같이 전송함?
-    res.status(200).json({ data: { authCode } });
-  } catch (error) {
-    console.log(error);
-  }
-};
-
 // 이메일 중복확인
 const checkExistingEmail = asyncWrapper(
   "checkExistingEmail",
@@ -244,10 +215,89 @@ const verifyAuthCode = asyncWrapper(
   }
 );
 
+// 인증 코드 보내기
+const sendAuthCodeEmail = asyncWrapper(
+  "sendAuthCodeEmail",
+  async (req: express.Request, res: express.Response) => {
+    const { userId, email } = req.body;
+
+    if (!userId && !email) {
+      throw new BadRequest("이메일 혹은 사용자 아이디를 전송해주세요.");
+    }
+
+    let user;
+    if (userId) {
+      user = await getUserByUserId(userId);
+    } else if (email) {
+      user = await getUserByEmail(email);
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "가입자 없음" });
+    }
+
+    // 이메일 전송
+    // 인증 번호 생성하기
+    const authCode = createAuthCode();
+
+    // 인증 번호 저장하고 만료시간 가져오기
+    const auth = await saveAuthCode(userId, authCode);
+
+    if (!auth) {
+      throw new BadRequest("인증 코드 등록에 실패했습니다.");
+    }
+
+    // 제목
+    const subject = "PlayGround 인증코드";
+    // 내용
+    const html = `<div><p>PlayGround 인증코드 : ${authCode}</p><p>인증 코드는 ${auth.authExpiredAt}에 만료됩니다.</p></div>`;
+    const info = await sendEmail(user.email, subject, html);
+
+    if (!info) {
+      throw new BadRequest(`이메일 전송 실패`);
+    }
+
+    res.status(200).json({ message: "인증 코드가 발송되었습니다." });
+  }
+);
+
+// 일반 로그인
+const normalLogin = asyncWrapper(
+  "normalLogin",
+  async (req: Request, res: Response) => {
+    const { userId, email, password } = req.body;
+
+    if ((!userId && !email) || !password) {
+      throw new BadRequest(
+        "사용자 아이디 혹은 이메일 혹은 비밀번호를 제공해주세요."
+      );
+    }
+
+    let user;
+    if (userId) {
+      user = await getUserByUserId(userId);
+    } else if (email) {
+      user = await getUserByEmail(email);
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "가입자가 없습니다." });
+    }
+
+    if (!user.isAuthenticated) {
+      return res
+        .status(403)
+        .json({ message: "미인증 가입자", success: "unautenticated" });
+      return;
+    }
+    console.log("통과");
+  }
+);
 export {
   sendAuthCodeEmail,
   checkExistingEmail,
   checkExistingUserId,
   creatNewUser,
   verifyAuthCode,
+  normalLogin,
 };
