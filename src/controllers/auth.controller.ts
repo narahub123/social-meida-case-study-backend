@@ -9,7 +9,11 @@ import {
 } from "../services/user.service";
 import { saveUserSettings } from "../services/userSettings.service";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
-import { createAuthCode, createHashedPassword } from "../utils/auth";
+import {
+  createAuthCode,
+  createHashedPassword,
+  generatePassword,
+} from "../utils/auth.utils";
 import { saveImageToCloudinary } from "../utils/cloudinary";
 import { asyncWrapper } from "../middlewares/asyncWrapper";
 import { fetchAuthByUserId, saveAuthCode } from "../services/auth.service";
@@ -80,7 +84,8 @@ const creatNewUser = asyncWrapper(
       !password ||
       !userId ||
       !location ||
-      !ip
+      !ip ||
+      !gender
     ) {
       const missingsArr = [];
 
@@ -104,6 +109,9 @@ const creatNewUser = asyncWrapper(
       }
       if (!ip) {
         missingsArr.push("ip");
+      }
+      if (gender) {
+        missingsArr.push("gender");
       }
 
       const missings = missingsArr.join(", ");
@@ -305,6 +313,115 @@ const integrateSocial = asyncWrapper(
   }
 );
 
+// 구글 로그인
+const googleSignup = asyncWrapper(
+  "googleSignup",
+  async (req: Request, res: Response) => {
+    const value = req.body;
+    console.log(value);
+
+    const {
+      userId,
+      username,
+      email,
+      userPic,
+      location,
+      ip,
+      gender,
+      birth,
+      alarms,
+      language,
+    } = req.body;
+
+    // 유효성 검사
+    if (
+      !userId ||
+      !username ||
+      !email ||
+      !location ||
+      !ip ||
+      !gender ||
+      !birth
+    ) {
+      const missingsArr = [];
+      if (!userId) {
+        missingsArr.push("userId");
+      }
+      if (!username) {
+        missingsArr.push("username");
+      }
+      if (!email) {
+        missingsArr.push("email");
+      }
+      if (!birth) {
+        missingsArr.push("birth");
+      }
+      if (gender) {
+        missingsArr.push("gender");
+      }
+      if (!location) {
+        missingsArr.push("location");
+      }
+      if (!ip) {
+        missingsArr.push("ip");
+      }
+
+      const missings = missingsArr.join(", ");
+
+      throw new BadRequest(`${missings}에 대한 정보를 제공해주세요.`);
+    }
+
+    // 동일한 이메일 존재 여부 확인
+    const duplicateEmailUser = await getUserByEmail(email);
+
+    if (duplicateEmailUser) {
+      // return res.status(409).json({ message: "이미 존재하는 이메일입니다." });
+      throw new DuplicateError("이미 존재하는 아이디입니다.");
+    }
+
+    // 동일한 아이디 존재 여부 확인
+    const duplicateUserIdUser = await getUserByUserId(userId);
+
+    if (duplicateUserIdUser) {
+      return res.status(409).json({ message: "이미 존재하는 아이디입니다." });
+    }
+
+    // 임의의 비밀번호 생성
+    const hashedPassword = generatePassword();
+
+    const isAuthenticated = true;
+    const social = "google";
+
+    // 정보저장하기
+    const user = await saveUser(
+      username,
+      email,
+      birth,
+      hashedPassword,
+      userId,
+      userPic,
+      gender,
+      location,
+      ip,
+      isAuthenticated,
+      social
+    );
+
+    if (!user) {
+      throw new BadRequest(`회원 가입 실패`);
+    }
+
+    // 설정 저장하기
+    const userSettings = await saveUserSettings(userId, alarms, language);
+
+    if (!userSettings) {
+      throw new BadRequest("설정 저장에 실패했습니다.");
+    }
+
+    res.status(200).json({ message: "회원 가입 성공", success: "ok" });
+  }
+);
+
 // 일반 로그인
 const normalLogin = asyncWrapper(
   "normalLogin",
@@ -347,4 +464,5 @@ export {
   verifyAuthCode,
   normalLogin,
   integrateSocial,
+  googleSignup,
 };

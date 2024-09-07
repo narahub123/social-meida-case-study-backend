@@ -28,7 +28,9 @@ const saveUser = async (
   userPic: string,
   gender: string,
   location: string,
-  ip: string
+  ip: string,
+  isAuthenticated?: boolean,
+  social?: string
 ) => {
   try {
     const newUser = new User({
@@ -41,6 +43,8 @@ const saveUser = async (
       gender,
       location,
       ip,
+      isAuthenticated,
+      social,
     });
 
     return newUser.save();
