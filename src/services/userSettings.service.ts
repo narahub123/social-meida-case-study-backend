@@ -1,5 +1,5 @@
-import { UserSettings } from "../models/UserSettingsModel";
-import { AlarmsTypes } from "../types/userSettings";
+import { UserSettings } from "../models/userSettings.model";
+import { AlarmsTypes } from "../types/userSettings.type";
 
 // 유저 설정 저장
 const saveUserSettings = async (

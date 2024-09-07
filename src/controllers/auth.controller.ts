@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { sendEmail } from "../services/emailServices";
+import { sendEmail } from "../services/email.service";
 import {
   getUserByEmail,
   getUserByUserId,
@@ -7,7 +7,7 @@ import {
   updateIsAuthenticated,
   updateSocial,
 } from "../services/user.service";
-import { saveUserSettings } from "../services/userSettingsServices";
+import { saveUserSettings } from "../services/userSettings.service";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import { createAuthCode, createHashedPassword } from "../utils/auth";
 import { saveImageToCloudinary } from "../utils/cloudinary";
