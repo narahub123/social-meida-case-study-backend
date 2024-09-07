@@ -5,6 +5,7 @@ import {
   creatNewUser,
   verifyAuthCode,
   normalLogin,
+  integrateSocial,
 } from "../controllers/auth.controller";
 import express from "express";
 
@@ -15,4 +16,5 @@ export default (router: express.Router) => {
   router.get("/auth/verifyAuthCode", verifyAuthCode);
   router.post("/auth/requestAuthCode", sendAuthCodeEmail);
   router.post("/auth/login", normalLogin);
+  router.post("/auth/signup/integrate", integrateSocial);
 };

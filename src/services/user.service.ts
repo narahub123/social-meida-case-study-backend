@@ -60,4 +60,18 @@ const updateIsAuthenticated = async (
     throw error;
   }
 };
-export { getUserByEmail, getUserByUserId, saveUser, updateIsAuthenticated };
+
+const updateSocial = async (email: string, social: string) => {
+  try {
+    return await User.updateOne({ email }, { $set: { social } });
+  } catch (error) {
+    throw error;
+  }
+};
+export {
+  getUserByEmail,
+  getUserByUserId,
+  saveUser,
+  updateIsAuthenticated,
+  updateSocial,
+};

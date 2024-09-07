@@ -110,6 +110,12 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // 소셜 계정
+    social: {
+      type: String,
+      enum: ["google", "naver", "kakao"],
+    },
   },
   {
     timestamps: true,

@@ -5,6 +5,7 @@ import {
   getUserByUserId,
   saveUser,
   updateIsAuthenticated,
+  updateSocial,
 } from "../services/user.service";
 import { saveUserSettings } from "../services/userSettingsServices";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
@@ -276,6 +277,34 @@ const sendAuthCodeEmail = asyncWrapper(
   }
 );
 
+// 이메일에 소셜 미디어 통합하기
+const integrateSocial = asyncWrapper(
+  "",
+  async (req: Request, res: Response) => {
+    const { social, email } = req.body;
+
+    const user = await getUserByEmail(email);
+
+    if (!user) {
+      return res.status(404).json({ message: "유저 부존재" });
+    }
+
+    if (user.social === social) {
+      throw new DuplicateError("이미 등록된 계정입니다.");
+    }
+
+    const updatedUser = await updateSocial(email, social);
+
+    if (updatedUser.modifiedCount === 0) {
+      return res
+        .status(400)
+        .json({ message: "업데이트 실패", success: "fail" });
+    }
+
+    res.status(200).json({ message: "업데이트 성공", success: "ok" });
+  }
+);
+
 // 일반 로그인
 const normalLogin = asyncWrapper(
   "normalLogin",
@@ -317,4 +346,5 @@ export {
   creatNewUser,
   verifyAuthCode,
   normalLogin,
+  integrateSocial,
 };
