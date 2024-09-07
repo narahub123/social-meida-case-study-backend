@@ -1,4 +1,4 @@
-import { User } from "../models/UserModel";
+import { User } from "../models/user.model";
 
 // 이메일로 유저 정보 확인하기
 const getUserByEmail = async (email: string) => {

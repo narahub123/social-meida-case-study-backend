@@ -279,7 +279,7 @@ const sendAuthCodeEmail = asyncWrapper(
 
 // 이메일에 소셜 미디어 통합하기
 const integrateSocial = asyncWrapper(
-  "",
+  "integrateSocial",
   async (req: Request, res: Response) => {
     const { social, email } = req.body;
 
