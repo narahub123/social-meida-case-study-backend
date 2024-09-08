@@ -629,9 +629,9 @@ const kakaoSignup = asyncWrapper(
 
     if (userEmail) {
       const newSocial = [...userEmail.social, "kakako"];
-      const user = await updateSocial(userEmail.userId, newSocial);
+      const user = await updateSocial(email, newSocial);
 
-      if (!user) {
+      if (user.modifiedCount === 0) {
         throw new BadRequest("회원 가입 실패");
       }
       console.log("회원가입 성공");
