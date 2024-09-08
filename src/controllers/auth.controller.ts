@@ -422,6 +422,165 @@ const googleSignup = asyncWrapper(
   }
 );
 
+const naverRequest = asyncWrapper(
+  "naverRequest",
+  async (req: Request, res: Response) => {
+    const { state } = req.query;
+    console.log("안녕");
+
+    const naver_redirect_url = `http://localhost:8080/auth/naver/callback`;
+    const naver_api_url = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${
+      process.env.NAVER_CLIENT_ID
+    }&redirect_uri=${naver_redirect_url}&state=${state.toString()}`;
+
+    console.log(naver_api_url);
+
+    const response = await fetch(naver_api_url, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      throw new Error("Naver API 요청에 실패했습니다.");
+    }
+  }
+);
+
+// 네이버 회원 가입
+const naverSignup = asyncWrapper(
+  "naverSignup",
+  async (req: Request, res: Response) => {
+    console.log("hi");
+
+    // 토큰을 발급받으려면 query string으로 넘겨야 할 정보들
+    const code = req.query.code;
+    const state = req.query.state;
+
+    const extra = state.toString().split("_");
+    const ip = extra[0];
+    const location = extra[1];
+
+    const naver_client_id = process.env.NAVER_CLIENT_ID;
+    const naver_client_secret = process.env.NAVER_CLIENT_SECRET;
+    const naver_redirect_url = "https://openapi.naver.com/v1/nid/me";
+
+    // token 받기
+    const naver_api_url = `https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&response_type=code&client_id=${naver_client_id}&client_secret=${naver_client_secret}&redirect_uri=${naver_redirect_url}&code=${code}&state=${state}`;
+    const tokens = await fetch(naver_api_url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Naver-Client-Id": naver_client_id,
+        "X-Naver-Client-Secret": naver_client_secret,
+      },
+    });
+
+    const data = await tokens.json();
+
+    const token = data.access_token;
+
+    // 토큰을 이용해 유저 정보 받기
+    const response = await fetch(naver_redirect_url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const naverUserData = await response.json();
+
+    const {
+      id,
+      nickname,
+      profile_image,
+      gender,
+      email,
+      name,
+      birthday,
+      birthyear,
+    } = naverUserData.response;
+
+    // 같은 이메일을 사용하는 유저가 있는지 확인
+    const duplicatedEmail = await getUserByEmail(email);
+
+    if (duplicatedEmail) {
+      throw new DuplicateError("이메일 중복");
+    }
+
+    // naver아이디를 이용해 임의의 아이디 만들기
+    const userId = id
+      .split("-")
+      .join("")
+      .split("_")
+      .join("")
+      .toLowerCase()
+      .slice(0, 29);
+
+    const duplicatedUserId = await getUserByUserId(userId);
+
+    if (duplicatedUserId) {
+      throw new DuplicateError("중복 아이디");
+    }
+
+    const hashedPassword = generatePassword();
+
+    const isAuthenticated = true;
+    const social = "naver";
+    const birth = birthyear + birthday.split("-").join("");
+    const genderLowcase = gender.toLowerCase();
+
+    console.log(
+      nickname,
+      email,
+      birth,
+      hashedPassword,
+      userId,
+      profile_image,
+      genderLowcase,
+      location,
+      ip,
+      isAuthenticated,
+      social
+    );
+
+    const user = await saveUser(
+      nickname,
+      email,
+      birth,
+      hashedPassword,
+      userId,
+      profile_image,
+      genderLowcase,
+      location,
+      ip,
+      isAuthenticated,
+      social
+    );
+
+    if (!user) {
+      throw new BadRequest("회원 가일 실패");
+    }
+
+    res.redirect(`http://localhost:5173/auth?naver=success&userId=${userId}`);
+  }
+);
+
+// 네이버 회원 가입시 설정 저장하기
+const saveNaverSettings = asyncWrapper(
+  "saveNaverSettings",
+  async (req: Request, res: Response) => {
+    const { alarms, language, darkMode, userId } = req.body;
+
+    console.log(alarms, language, darkMode, userId);
+
+    const settings = await saveUserSettings(userId, alarms, language);
+
+    if (!settings) {
+      throw new BadRequest("설정 저장 실패");
+    }
+
+    res.status(201).json({ message: "설정 저장 성공", success: "ok" });
+  }
+);
+
 // 일반 로그인
 const normalLogin = asyncWrapper(
   "normalLogin",
@@ -456,6 +615,7 @@ const normalLogin = asyncWrapper(
     console.log("통과");
   }
 );
+
 export {
   sendAuthCodeEmail,
   checkExistingEmail,
@@ -465,4 +625,7 @@ export {
   normalLogin,
   integrateSocial,
   googleSignup,
+  naverSignup,
+  naverRequest,
+  saveNaverSettings,
 };
