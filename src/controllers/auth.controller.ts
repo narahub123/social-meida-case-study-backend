@@ -581,6 +581,72 @@ const saveNaverSettings = asyncWrapper(
   }
 );
 
+// 카카오로 회원 가입
+const kakaoSignup = asyncWrapper(
+  "kakaoSignup",
+  async (req: Request, res: Response) => {
+    const CLIENT_ID = process.env.KAKAO_REST_API_KEY;
+    const REDIRECT_URI = process.env.KAKAO_REDIRECT_URL;
+    const CODE = req.query.code as string;
+    // 토큰 발급
+    const kakao_token_url = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${CLIENT_ID}&redirectUri=${REDIRECT_URI}&code=${CODE}`;
+
+    const response = await fetch(kakao_token_url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+      },
+    });
+
+    const data = await response.json();
+
+    const token = data.access_token;
+
+    // 사용자 정보 가져오기
+    const kakao_user_url = `https://kapi.kakao.com/v2/user/me`;
+    const userInfo = await fetch(kakao_user_url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const user = await userInfo.json();
+
+    console.log(user.properties, user.kakao_account.email);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "비회원", success: "unauthorized" });
+    }
+
+    const username = user.properties.nickname;
+    const userPic = user.properties.profile_image;
+    const email = user.kakao_account.email;
+
+    const userEmail = await getUserByEmail(email);
+
+    if (userEmail) {
+      const newSocial = [...userEmail.social, "kakako"];
+      const user = await updateSocial(userEmail.userId, newSocial);
+
+      if (!user) {
+        throw new BadRequest("회원 가입 실패");
+      }
+      console.log("회원가입 성공");
+
+      return res.redirect("http://localhost:5173/auth");
+    } else {
+      console.log("회원가입 성공");
+
+      return res.redirect(
+        `http://localhost:5173/auth?username=${username}&userPic=${userPic}&email=${email}&kakao=success`
+      );
+    }
+  }
+);
+
 // 일반 로그인
 const normalLogin = asyncWrapper(
   "normalLogin",
@@ -628,4 +694,5 @@ export {
   naverSignup,
   naverRequest,
   saveNaverSettings,
+  kakaoSignup,
 };

@@ -113,7 +113,7 @@ const UserSchema = new mongoose.Schema(
 
     // 소셜 계정
     social: {
-      type: String,
+      type: [String],
       enum: ["google", "naver", "kakao"],
     },
   },

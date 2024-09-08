@@ -65,13 +65,15 @@ const updateIsAuthenticated = async (
   }
 };
 
-const updateSocial = async (email: string, social: string) => {
+// 소셜 로그인 추가하기
+const updateSocial = async (email: string, social: string[]) => {
   try {
     return await User.updateOne({ email }, { $set: { social } });
   } catch (error) {
     throw error;
   }
 };
+
 export {
   getUserByEmail,
   getUserByUserId,
