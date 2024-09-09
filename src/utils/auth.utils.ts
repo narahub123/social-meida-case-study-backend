@@ -1,4 +1,6 @@
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 // 해싱 패스워드 생성
 export const createHashedPassword = async (password: string) => {
@@ -51,4 +53,27 @@ export const checkPassword = async (
   password: string
 ) => {
   return await bcrypt.compare(password, registeredPassword);
+};
+
+// jwt 생성하기
+export const createToken = (
+  _id: mongoose.Types.ObjectId,
+  role: string,
+  expiresIn: string
+) => {
+  // payload에 담을 데이터
+  const payload = {
+    _id,
+    role,
+  };
+
+  // 보안키
+  const secret = process.env.JWT_SECRET_KEY;
+
+  // 옵션
+  const options = {
+    expiresIn,
+  };
+
+  return jwt.sign(payload, secret, options);
 };

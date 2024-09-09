@@ -13,6 +13,7 @@ import {
   checkPassword,
   createAuthCode,
   createHashedPassword,
+  createToken,
   generatePassword,
 } from "../utils/auth.utils";
 import { saveImageToCloudinary } from "../utils/cloudinary";
@@ -661,6 +662,7 @@ const normalLogin = asyncWrapper(
       );
     }
 
+    // 가입 여부 확인 하기
     let user;
     if (userId) {
       user = await getUserByUserId(userId);
@@ -674,6 +676,7 @@ const normalLogin = asyncWrapper(
         .json({ message: "가입자가 없습니다.", success: "unregistered" });
     }
 
+    // 가입자의 인증 여부 확인하기
     if (!user.isAuthenticated) {
       return res
         .status(403)
@@ -688,8 +691,18 @@ const normalLogin = asyncWrapper(
         .status(400)
         .json({ message: "비밀번호 불일치", success: "wrongpassword" });
     }
-  }
-);
+
+    const userAgent = req.headers["user-agent"];
+
+    console.log("User-agent", userAgent);
+
+    // access token, refresh token 생성하기
+    // access token 생성
+    const access_token = createToken(user._id, user.userRole, "60m");
+    // refresh token 생성
+    const refresh_token = createToken(user._id, "", "1d");
+  } // normalLogin ends
+); // asyncWrapper ends
 
 export {
   sendAuthCodeEmail,
