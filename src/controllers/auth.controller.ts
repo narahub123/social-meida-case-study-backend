@@ -14,6 +14,7 @@ import {
   createAuthCode,
   createHashedPassword,
   createToken,
+  fetchDeviceInfo,
   generatePassword,
 } from "../utils/auth.utils";
 import { saveImageToCloudinary } from "../utils/cloudinary";
@@ -654,7 +655,9 @@ const kakaoSignup = asyncWrapper(
 const normalLogin = asyncWrapper(
   "normalLogin",
   async (req: Request, res: Response) => {
-    const { userId, email, password } = req.body;
+    const { userId, email, password, ip, location } = req.body;
+
+    console.log(userId, email, password, ip, location);
 
     if ((!userId && !email) || !password) {
       throw new BadRequest(
@@ -692,15 +695,30 @@ const normalLogin = asyncWrapper(
         .json({ message: "비밀번호 불일치", success: "wrongpassword" });
     }
 
-    const userAgent = req.headers["user-agent"];
+    const device = req.headers["user-agent"];
 
-    console.log("User-agent", userAgent);
+    const { type, os, browser } = fetchDeviceInfo(device);
+
+    console.log(type, os, browser);
 
     // access token, refresh token 생성하기
     // access token 생성
-    const access_token = createToken(user._id, user.userRole, "60m");
+    const accessToken = createToken(user._id, user.userRole, "60m");
     // refresh token 생성
-    const refresh_token = createToken(user._id, "", "1d");
+    const refreshToken = createToken(user._id, "", "1d");
+
+    // 저장할 loginInfo
+    const loginInfo = {
+      user: user._id,
+      refreshToken,
+      device: {
+        type,
+        os,
+        browser,
+      },
+      ip,
+      location,
+    };
   } // normalLogin ends
 ); // asyncWrapper ends
 

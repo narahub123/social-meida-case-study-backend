@@ -77,3 +77,42 @@ export const createToken = (
 
   return jwt.sign(payload, secret, options);
 };
+
+// 장치 정보 알아내기
+export const fetchDeviceInfo = (userAgent: string) => {
+  const type = getDeviceType(userAgent);
+  const os = getOsInfo(userAgent);
+  const browser = getBrowserInfo(userAgent);
+
+  return { type, os, browser };
+};
+
+// 장치 종류 알아내기
+const getDeviceType = (userAgent: string) => {
+  let deviceType = "";
+  if (/mobile/i.test(userAgent)) {
+    deviceType = "mobile";
+  } else if (/tablet/i.test(userAgent)) {
+    deviceType = "tablet";
+  } else {
+    deviceType = "desktop";
+  }
+  return deviceType;
+};
+
+const getOsInfo = (userAgent: string) => {
+  const osRegex =
+    /(Windows NT \d+\.\d+|Mac OS X \d+_\d+|\bLinux\b|\bAndroid\b|\biPhone OS \d+_\d+)/i;
+  const osMatch = userAgent.match(osRegex);
+  const os = osMatch ? osMatch[0].replace(/_/g, ".") : "Unknown OS";
+
+  return os;
+};
+const getBrowserInfo = (userAgent: string) => {
+  const browserRegex =
+    /(\bChrome\/[\d\.]+|\bFirefox\/[\d\.]+|\bSafari\/[\d\.]+|\bMSIE\s[\d\.]+|\bEdge\/[\d\.]+|Trident\/[\d\.]+)/i;
+  const browserMatch = userAgent.match(browserRegex);
+  const browser = browserMatch ? browserMatch[0] : "Unknown Browser";
+
+  return browser;
+};
