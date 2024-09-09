@@ -15,6 +15,10 @@ const GOOGLE_LOGIN_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
 const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
 const KAKAO_LOGIN_REDIRECT_URI = process.env.KAKAO_LOGIN_REDIRECT_URI;
 
+const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID;
+const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET;
+const NAVER_REDIRECT_URI = process.env.NAVER_LOGIN_REDIRECT_URI;
+
 // 해싱 패스워드 생성
 export const createHashedPassword = async (password: string) => {
   const salt = await bcrypt.genSalt(10);
@@ -155,9 +159,13 @@ const getBrowserInfo = (userAgent: string) => {
 };
 
 // 소셜 로그인을 통해 유저 정보 얻기
-export const getUserInfoByOauth = async (type: string, code: string) => {
+export const getUserInfoByOauth = async (
+  type: string,
+  code: string,
+  state?: string
+) => {
   // 토큰 얻기
-  const accessToken = await getToken(type, code);
+  const accessToken = await getToken(type, code, state);
 
   // 유저 정보 가져오기
   const userInfo = await getUserInfo(type, accessToken);
@@ -165,9 +173,12 @@ export const getUserInfoByOauth = async (type: string, code: string) => {
   return userInfo;
 };
 // 소셜 로그인 토큰 얻기
-export const getToken = async (type: string, code: string) => {
+export const getToken = async (type: string, code: string, state?: string) => {
   let token_url = "";
   let body: any;
+  let headers: { [key: string]: string } = {
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
 
   if (type === "google") {
     token_url = "https://oauth2.googleapis.com/token";
@@ -190,11 +201,27 @@ export const getToken = async (type: string, code: string) => {
     });
   }
 
+  if (type === "naver") {
+    token_url = "https://nid.naver.com/oauth2.0/token";
+    body = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: NAVER_CLIENT_ID,
+      client_secret: NAVER_CLIENT_SECRET,
+      redirect_uri: NAVER_REDIRECT_URI,
+      code: code,
+      state: state,
+    });
+
+    headers = {
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "X-Naver-Client-Id": NAVER_CLIENT_ID,
+      "X-Naver-Client-Secret": NAVER_CLIENT_SECRET,
+    };
+  }
+
   const response = await fetch(token_url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
+    headers: headers,
     body: body.toString(),
   });
 
@@ -223,6 +250,11 @@ export const getUserInfo = async (type: string, accessToken: string) => {
   if (type === "kakao") {
     requestUrl = `https://kapi.kakao.com/v2/user/me`;
   }
+
+  if (type === "naver") {
+    requestUrl = "https://openapi.naver.com/v1/nid/me";
+  }
+
   // 사용자 정보 취득하기
   const resData = await fetch(requestUrl, {
     headers: {

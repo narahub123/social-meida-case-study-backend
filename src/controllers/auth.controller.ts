@@ -854,6 +854,7 @@ const oauthLogin = asyncWrapper(
   async (req: Request, res: Response) => {
     // 공통 정보
     const state = req.query.state.toString().split("_");
+
     const ip = state[0];
     const location = state[1];
     const type = state[2];
@@ -863,9 +864,11 @@ const oauthLogin = asyncWrapper(
     const code = req.query.code as string;
 
     // oauth를 통해 유저 정보 얻기
-    const userInfo = await getUserInfoByOauth(type, code);
-
-    console.log(userInfo);
+    const userInfo = await getUserInfoByOauth(
+      type,
+      code,
+      req.query.state.toString()
+    );
 
     // 유저의 이메일 정보
     const email =
@@ -873,9 +876,9 @@ const oauthLogin = asyncWrapper(
         ? userInfo.email
         : type === "kakao"
         ? userInfo.kakao_account.email
+        : type === "naver"
+        ? userInfo.response.email
         : "";
-
-    console.log(email);
 
     // 해당 email를 등록한 유저 찾기
     const user = await getUserByEmail(email);
