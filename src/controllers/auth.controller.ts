@@ -20,7 +20,11 @@ import {
 import { saveImageToCloudinary } from "../utils/cloudinary";
 import { asyncWrapper } from "../middlewares/asyncWrapper";
 import { fetchAuthByUserId, saveAuthCode } from "../services/auth.service";
-import { saveLoginInfo } from "../services/login.service";
+import {
+  checkSameDeviceTypeAndUserAndIP,
+  saveLoginInfo,
+} from "../services/login.service";
+import { DeviceType } from "types/login.type";
 
 // 이메일 중복확인
 const checkExistingEmail = asyncWrapper(
@@ -696,9 +700,9 @@ const normalLogin = asyncWrapper(
         .json({ message: "비밀번호 불일치", success: "wrongpassword" });
     }
 
-    const device = req.headers["user-agent"];
+    const deviceInfo = req.headers["user-agent"];
 
-    const { type, os, browser } = fetchDeviceInfo(device);
+    const { type, os, browser } = fetchDeviceInfo(deviceInfo);
 
     // access token, refresh token 생성하기
     // access token 생성
@@ -707,22 +711,34 @@ const normalLogin = asyncWrapper(
     const refreshToken = createToken(user._id, "", "1d");
 
     // 저장할 loginInfo
+    const device: DeviceType = {
+      type,
+      os,
+      browser,
+    };
+
     const loginInfo = {
       user: user._id,
       refreshToken,
-      device: {
-        type,
-        os,
-        browser,
-      },
+      device,
       ip,
       location,
     };
 
-    const info = await saveLoginInfo(loginInfo);
+    // 동일 유저, ip, 장치를 사용한 로그인 여부 확인
+    const isSavedInfo = await checkSameDeviceTypeAndUserAndIP(
+      user._id,
+      ip,
+      device
+    );
 
-    if (!info) {
-      throw new BadRequest("로그인 정보 등록 실패");
+    // 이미 기록된 로그인이 아닌 경우에만 저장
+    if (!isSavedInfo) {
+      const info = await saveLoginInfo(loginInfo);
+
+      if (!info) {
+        throw new BadRequest("로그인 정보 등록 실패");
+      }
     }
 
     res.cookie("access", accessToken, {
@@ -730,7 +746,7 @@ const normalLogin = asyncWrapper(
       maxAge: 60 * 60 * 1000, // 1시간
       sameSite: "lax",
     });
-    res.json({ message: "로그인 성공", success : "ok" });
+    res.json({ message: "로그인 성공", success: "ok" });
   } // normalLogin ends
 ); // asyncWrapper ends
 
