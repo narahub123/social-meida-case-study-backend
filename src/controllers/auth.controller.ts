@@ -18,8 +18,6 @@ import {
   createToken,
   fetchDeviceInfo,
   generatePassword,
-  getToken,
-  getUserInfo,
   getUserInfoByOauth,
 } from "../utils/auth.utils";
 import { saveImageToCloudinary } from "../utils/cloudinary";
@@ -32,10 +30,6 @@ import {
 import { DeviceType } from "types/login.type";
 
 const baseUrl = process.env.BASE_URL;
-
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_REDIRECT_URL = process.env.GOOGLE_REDIRECT_URL;
 
 // 이메일 중복확인
 const checkExistingEmail = asyncWrapper(
@@ -868,13 +862,20 @@ const oauthLogin = asyncWrapper(
 
     const code = req.query.code as string;
 
-    //
+    // oauth를 통해 유저 정보 얻기
     const userInfo = await getUserInfoByOauth(type, code);
 
     console.log(userInfo);
 
     // 유저의 이메일 정보
-    const email = userInfo.email;
+    const email =
+      type === "google"
+        ? userInfo.email
+        : type === "kakao"
+        ? userInfo.kakao_account.email
+        : "";
+
+    console.log(email);
 
     // 해당 email를 등록한 유저 찾기
     const user = await getUserByEmail(email);

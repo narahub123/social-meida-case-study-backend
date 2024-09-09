@@ -10,7 +10,10 @@ import {
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_REDIRECT_URL = process.env.GOOGLE_REDIRECT_URL;
+const GOOGLE_LOGIN_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+
+const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
+const KAKAO_LOGIN_REDIRECT_URI = process.env.KAKAO_LOGIN_REDIRECT_URI;
 
 // 해싱 패스워드 생성
 export const createHashedPassword = async (password: string) => {
@@ -172,8 +175,18 @@ export const getToken = async (type: string, code: string) => {
       grant_type: "authorization_code",
       client_id: GOOGLE_CLIENT_ID,
       client_secret: GOOGLE_CLIENT_SECRET,
-      redirect_uri: GOOGLE_REDIRECT_URL,
+      redirect_uri: GOOGLE_LOGIN_REDIRECT_URI,
       code: code as string, // TypeScript에서는 코드 타입을 문자열로 지정
+    });
+  }
+
+  if (type === "kakao") {
+    token_url = "https://kauth.kakao.com/oauth/token";
+    body = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: KAKAO_REST_API_KEY,
+      redirect_uri: KAKAO_LOGIN_REDIRECT_URI,
+      code: code as string,
     });
   }
 
@@ -205,20 +218,24 @@ export const getUserInfo = async (type: string, accessToken: string) => {
 
   if (type === "google") {
     requestUrl = `https://www.googleapis.com/userinfo/v2/me`;
-    // 사용자 정보 취득하기
-    const resData = await fetch(requestUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!resData.ok) {
-      console.log("에러:", resData.statusText);
-      throw new CustomAPIError("회원 정보 획득 실패");
-    }
-
-    userInfo = await resData.json();
   }
+
+  if (type === "kakao") {
+    requestUrl = `https://kapi.kakao.com/v2/user/me`;
+  }
+  // 사용자 정보 취득하기
+  const resData = await fetch(requestUrl, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!resData.ok) {
+    console.log("에러:", resData.statusText);
+    throw new CustomAPIError("회원 정보 획득 실패");
+  }
+
+  userInfo = await resData.json();
 
   return userInfo;
 };
