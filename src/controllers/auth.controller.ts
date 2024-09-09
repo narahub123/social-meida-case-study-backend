@@ -11,6 +11,7 @@ import { saveUserSettings } from "../services/userSettings.service";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import {
   checkPassword,
+  createAccessAndRefreshTokens,
   createAuthCode,
   createHashedPassword,
   createToken,
@@ -446,22 +447,17 @@ const googleSignup = asyncWrapper(
     if (!userSettings) {
       throw new BadRequest("설정 저장에 실패했습니다.");
     }
+
     // 토큰 생성
     // access token 생성
-    const accessToken = createToken(user._id, user.userRole, "60m");
-    // refresh token 생성
-    const refreshToken = createToken(user._id, "", "1d");
+    const { accessToken, refreshToken } = createAccessAndRefreshTokens(
+      user._id,
+      user.userRole
+    );
 
     // 로그인 정보를 기록
     // 장치 정보 알아내기
-    const { type, os, browser } = fetchDeviceInfo(deviceInfo);
-
-    // 저장할 loginInfo
-    const device: DeviceType = {
-      type,
-      os,
-      browser,
-    };
+    const device: DeviceType = fetchDeviceInfo(deviceInfo);
 
     const loginInfo = {
       user: user._id,

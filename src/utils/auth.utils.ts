@@ -78,6 +78,28 @@ export const createToken = (
   return jwt.sign(payload, secret, options);
 };
 
+export const createAccessToken = (
+  user: mongoose.Types.ObjectId,
+  userRole: string
+) => {
+  return createToken(user, userRole, "1h");
+};
+
+export const createRefreshToken = (user: mongoose.Types.ObjectId) => {
+  return createToken(user, "", "1d");
+};
+
+// access token refresh token 생성하기
+export const createAccessAndRefreshTokens = (
+  user: mongoose.Types.ObjectId,
+  role: string
+) => {
+  const accessToken = createAccessToken(user, role);
+  const refreshToken = createRefreshToken(user);
+
+  return { accessToken, refreshToken };
+};
+
 // 장치 정보 알아내기
 export const fetchDeviceInfo = (userAgent: string) => {
   const type = getDeviceType(userAgent);
