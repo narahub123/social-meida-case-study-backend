@@ -30,16 +30,38 @@ import { DeviceType } from "types/login.type";
 const checkExistingEmail = asyncWrapper(
   "checkExistingEmail",
   async (req: express.Request, res: express.Response) => {
-    const { email } = req.body;
+    const { email, social } = req.body;
 
     if (!email) {
       throw new BadRequest("이메일을 제공해주세요.");
     }
 
-    const existingEmail = await getUserByEmail(email);
+    // 소셜에 대한 정보가 있는 경우 해당 이메일과 소셜이 모두 해당되는지 여부를 확인해야 함
+    if (social) {
+      const user = await getUserByEmail(email);
 
-    if (existingEmail) {
-      throw new DuplicateError("이미 존재하는 이메일입니다.");
+      // 동일 이메일을 사용하는 유저가 있는 경우
+      if (user) {
+        // 유저 계정에 해당 소셜이 포함되어 있는지 확인
+        const hasSocial = user.social.includes(social);
+
+        // 이미 등록된 소셜 계정인 경우 로그인 유도
+        if (hasSocial) {
+          throw new DuplicateError("이미 등록된 소셜 계정입니다.");
+        }
+
+        // 소셜 등록이 안된 경우
+        throw new DuplicateError("이미 존재하는 이메일입니다.");
+      }
+      // 소셜에 대한 정보가 없는 경우
+    } else {
+      // 이메일 중복 확인
+      const existingEmail = await getUserByEmail(email);
+
+      // 중복이 있는 경우
+      if (existingEmail) {
+        throw new DuplicateError("이미 존재하는 이메일입니다.");
+      }
     }
 
     res.status(200).json({ message: "사용 가능한 이메일입니다." });
@@ -325,9 +347,6 @@ const integrateSocial = asyncWrapper(
 const googleSignup = asyncWrapper(
   "googleSignup",
   async (req: Request, res: Response) => {
-    const value = req.body;
-    console.log(value);
-
     const {
       userId,
       username,
@@ -340,6 +359,8 @@ const googleSignup = asyncWrapper(
       alarms,
       language,
     } = req.body;
+    // 로그인한 사용자의 장치에 대한 정보
+    const deviceInfo = req.headers["user-agent"];
 
     // 유효성 검사
     if (
@@ -425,6 +446,53 @@ const googleSignup = asyncWrapper(
     if (!userSettings) {
       throw new BadRequest("설정 저장에 실패했습니다.");
     }
+    // 토큰 생성
+    // access token 생성
+    const accessToken = createToken(user._id, user.userRole, "60m");
+    // refresh token 생성
+    const refreshToken = createToken(user._id, "", "1d");
+
+    // 로그인 정보를 기록
+    // 장치 정보 알아내기
+    const { type, os, browser } = fetchDeviceInfo(deviceInfo);
+
+    // 저장할 loginInfo
+    const device: DeviceType = {
+      type,
+      os,
+      browser,
+    };
+
+    const loginInfo = {
+      user: user._id,
+      refreshToken,
+      device,
+      ip,
+      location,
+    };
+
+    // 동일 유저, ip, 장치를 사용한 로그인 여부 확인
+    const isSavedInfo = await checkSameDeviceTypeAndUserAndIP(
+      user._id,
+      ip,
+      device
+    );
+
+    // 이미 기록된 로그인이 아닌 경우에만 저장
+    if (!isSavedInfo) {
+      const info = await saveLoginInfo(loginInfo);
+
+      if (!info) {
+        throw new BadRequest("로그인 정보 등록 실패");
+      }
+    }
+
+    // 쿠키 전송
+    res.cookie("access", accessToken, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000,
+      sameSite: "lax",
+    });
 
     res.status(200).json({ message: "회원 가입 성공", success: "ok" });
   }
@@ -661,6 +729,7 @@ const normalLogin = asyncWrapper(
   "normalLogin",
   async (req: Request, res: Response) => {
     const { userId, email, password, ip, location } = req.body;
+    const deviceInfo = req.headers["user-agent"];
 
     console.log(userId, email, password, ip, location);
 
@@ -699,8 +768,6 @@ const normalLogin = asyncWrapper(
         .status(400)
         .json({ message: "비밀번호 불일치", success: "wrongpassword" });
     }
-
-    const deviceInfo = req.headers["user-agent"];
 
     const { type, os, browser } = fetchDeviceInfo(deviceInfo);
 
