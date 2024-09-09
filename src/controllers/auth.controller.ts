@@ -10,6 +10,7 @@ import {
 import { saveUserSettings } from "../services/userSettings.service";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import {
+  checkPassword,
   createAuthCode,
   createHashedPassword,
   generatePassword,
@@ -313,7 +314,7 @@ const integrateSocial = asyncWrapper(
   }
 );
 
-// 구글 로그인
+// 구글 회원 가입
 const googleSignup = asyncWrapper(
   "googleSignup",
   async (req: Request, res: Response) => {
@@ -422,6 +423,7 @@ const googleSignup = asyncWrapper(
   }
 );
 
+// 네이버 회원 가입
 const naverRequest = asyncWrapper(
   "naverRequest",
   async (req: Request, res: Response) => {
@@ -678,7 +680,14 @@ const normalLogin = asyncWrapper(
         .json({ message: "미인증 가입자", success: "unautenticated" });
       return;
     }
-    console.log("통과");
+
+    // 비밀번호 비교하기
+    const isValidPassword = await checkPassword(user.password, password);
+    if (!isValidPassword) {
+      return res
+        .status(400)
+        .json({ message: "비밀번호 불일치", success: "wrongpassword" });
+    }
   }
 );
 

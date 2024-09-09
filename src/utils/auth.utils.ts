@@ -44,3 +44,11 @@ export const generatePassword = () => {
 
   return password;
 };
+
+// 비밀번호 확인하기
+export const checkPassword = async (
+  registeredPassword: string,
+  password: string
+) => {
+  return await bcrypt.compare(password, registeredPassword);
+};
