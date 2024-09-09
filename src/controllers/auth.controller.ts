@@ -499,14 +499,11 @@ const naverRequest = asyncWrapper(
   "naverRequest",
   async (req: Request, res: Response) => {
     const { state } = req.query;
-    console.log("안녕");
 
     const naver_redirect_url = `http://localhost:8080/auth/naver/callback`;
     const naver_api_url = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${
       process.env.NAVER_CLIENT_ID
     }&redirect_uri=${naver_redirect_url}&state=${state.toString()}`;
-
-    console.log(naver_api_url);
 
     const response = await fetch(naver_api_url, {
       method: "GET",
@@ -522,7 +519,9 @@ const naverRequest = asyncWrapper(
 const naverSignup = asyncWrapper(
   "naverSignup",
   async (req: Request, res: Response) => {
-    console.log("hi");
+    const deviceInfo = req.headers[`user-agent`];
+
+    console.log(deviceInfo);
 
     // 토큰을 발급받으려면 query string으로 넘겨야 할 정보들
     const code = req.query.code;
@@ -600,20 +599,6 @@ const naverSignup = asyncWrapper(
     const birth = birthyear + birthday.split("-").join("");
     const genderLowcase = gender.toLowerCase();
 
-    console.log(
-      nickname,
-      email,
-      birth,
-      hashedPassword,
-      userId,
-      profile_image,
-      genderLowcase,
-      location,
-      ip,
-      isAuthenticated,
-      social
-    );
-
     const user = await saveUser(
       nickname,
       email,
@@ -629,8 +614,50 @@ const naverSignup = asyncWrapper(
     );
 
     if (!user) {
-      throw new BadRequest("회원 가일 실패");
+      throw new BadRequest("회원 가입 실패");
     }
+
+    // 토큰 생성
+    // access token 생성
+    const { accessToken, refreshToken } = createAccessAndRefreshTokens(
+      user._id,
+      user.userRole
+    );
+
+    // 로그인 정보를 기록
+    // 장치 정보 알아내기
+    const device: DeviceType = fetchDeviceInfo(deviceInfo);
+
+    const loginInfo = {
+      user: user._id,
+      refreshToken,
+      device,
+      ip,
+      location,
+    };
+
+    // 동일 유저, ip, 장치를 사용한 로그인 여부 확인
+    const isSavedInfo = await checkSameDeviceTypeAndUserAndIP(
+      user._id,
+      ip,
+      device
+    );
+
+    // 이미 기록된 로그인이 아닌 경우에만 저장
+    if (!isSavedInfo) {
+      const info = await saveLoginInfo(loginInfo);
+
+      if (!info) {
+        throw new BadRequest("로그인 정보 등록 실패");
+      }
+    }
+
+    // 쿠키 전송
+    res.cookie("access", accessToken, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000,
+      sameSite: "lax",
+    });
 
     res.redirect(`http://localhost:5173/auth?naver=success&userId=${userId}`);
   }
@@ -658,9 +685,12 @@ const saveNaverSettings = asyncWrapper(
 const kakaoSignup = asyncWrapper(
   "kakaoSignup",
   async (req: Request, res: Response) => {
+    const deviceInfo = req.headers[`user-agent`];
+
     const CLIENT_ID = process.env.KAKAO_REST_API_KEY;
     const REDIRECT_URI = process.env.KAKAO_REDIRECT_URL;
     const CODE = req.query.code as string;
+
     // 토큰 발급
     const kakao_token_url = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${CLIENT_ID}&redirectUri=${REDIRECT_URI}&code=${CODE}`;
 
@@ -684,30 +714,32 @@ const kakaoSignup = asyncWrapper(
       },
     });
 
-    const user = await userInfo.json();
+    const receivedUserInfo = await userInfo.json();
 
-    console.log(user.properties, user.kakao_account.email);
+    console.log(
+      receivedUserInfo.properties,
+      receivedUserInfo.kakao_account.email
+    );
 
-    if (!user) {
+    if (!receivedUserInfo) {
       return res
         .status(404)
         .json({ message: "비회원", success: "unauthorized" });
     }
 
-    const username = user.properties.nickname;
-    const userPic = user.properties.profile_image;
-    const email = user.kakao_account.email;
+    const username = receivedUserInfo.properties.nickname;
+    const userPic = receivedUserInfo.properties.profile_image;
+    const email = receivedUserInfo.kakao_account.email;
 
-    const userEmail = await getUserByEmail(email);
+    const user = await getUserByEmail(email);
 
-    if (userEmail) {
-      const newSocial = [...userEmail.social, "kakako"];
-      const user = await updateSocial(email, newSocial);
+    if (user) {
+      const newSocial = [...user.social, "kakako"];
+      const socialUpdate = await updateSocial(email, newSocial);
 
-      if (user.modifiedCount === 0) {
+      if (socialUpdate.modifiedCount === 0) {
         throw new BadRequest("회원 가입 실패");
       }
-      console.log("회원가입 성공");
 
       return res.redirect("http://localhost:5173/auth");
     } else {
