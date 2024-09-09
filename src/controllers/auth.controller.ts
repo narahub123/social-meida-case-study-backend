@@ -725,7 +725,12 @@ const normalLogin = asyncWrapper(
       throw new BadRequest("로그인 정보 등록 실패");
     }
 
-    
+    res.cookie("access", accessToken, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000, // 1시간
+      sameSite: "lax",
+    });
+    res.json({ message: "로그인 성공", success : "ok" });
   } // normalLogin ends
 ); // asyncWrapper ends
 
