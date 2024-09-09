@@ -1,4 +1,4 @@
-import mongoose, { mongo, Types } from "mongoose";
+import mongoose from "mongoose";
 
 const LoginSchema = new mongoose.Schema(
   {
@@ -18,8 +18,19 @@ const LoginSchema = new mongoose.Schema(
 
     // 장치 정보
     device: {
-      type: String,
-      required: true,
+      type: {
+        type: String,
+        required: true,
+        enum: ["desktop", "tablet", "mobile"],
+      },
+      os: {
+        type: String,
+        required: true,
+      },
+      browser: {
+        type: String,
+        required: true,
+      },
     },
 
     // ip 주소
