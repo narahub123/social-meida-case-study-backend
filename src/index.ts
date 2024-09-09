@@ -31,6 +31,7 @@ app.use(
   cors({
     origin: ["http://localhost:5173"],
     methods: "GET,POST,PUT,DELETE",
+    credentials: true, // 쿠키를 포함한 요청을 허용
   })
 );
 

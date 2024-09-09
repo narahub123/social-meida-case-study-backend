@@ -27,6 +27,10 @@ import {
 } from "../services/login.service";
 import { DeviceType } from "types/login.type";
 
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REDIRECT_URL = process.env.GOOGLE_REDIRECT_URL;
+
 // 이메일 중복확인
 const checkExistingEmail = asyncWrapper(
   "checkExistingEmail",
@@ -845,6 +849,118 @@ const normalLogin = asyncWrapper(
   } // normalLogin ends
 ); // asyncWrapper ends
 
+const googleLoginCallback = asyncWrapper(
+  "googleLoginCallback",
+  async (req: Request, res: Response) => {
+    const state = req.query.state;
+
+    const ip = state.toString().split("_")[0];
+    const location = state.toString().split("_")[1];
+
+    const code = req.query.code;
+    const deviceInfo = req.headers["user-agent"];
+
+    // 토큰 발급하기
+    const url = `https://oauth2.googleapis.com/token`;
+    const body = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: GOOGLE_REDIRECT_URL,
+      code: code as string, // TypeScript에서는 코드 타입을 문자열로 지정
+    });
+
+    const response = await fetch(url, {
+      method: "POST", // POST 메서드로 요청
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded", // 올바른 Content-Type
+      },
+      body: body.toString(), // 바디를 적절한 포맷으로 변환
+    });
+
+    if (!response.ok) {
+      console.log("에러:", response.statusText);
+      throw new CustomAPIError("토큰 획득 실패");
+    }
+
+    // 응답을 JSON 형식으로 변환
+    const data = await response.json();
+
+    const ACCESS_TOKEN = data.access_token;
+
+    const requestUrl = `https://www.googleapis.com/userinfo/v2/me`;
+    // 사용자 정보 취득하기
+    const resData = await fetch(requestUrl, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+      },
+    });
+
+    if (!resData.ok) {
+      console.log("에러:", resData.statusText);
+      throw new CustomAPIError("회원 정보 획득 실패");
+    }
+
+    const userInfo = await resData.json();
+
+    const email = userInfo.email;
+
+    const user = await getUserByEmail(email);
+
+    if (user) {
+      const isRegistered = user.social.includes("google");
+
+      if (!isRegistered) {
+        const newSocial = [...user.social, "google"];
+        await updateSocial(email, newSocial);
+      }
+
+      const { accessToken, refreshToken } = createAccessAndRefreshTokens(
+        user._id,
+        user.userRole
+      );
+
+      const device = fetchDeviceInfo(deviceInfo);
+
+      const loginInfo = {
+        user: user._id,
+        refreshToken,
+        device,
+        ip,
+        location,
+      };
+
+      // 동일 유저, ip, 장치를 사용한 로그인 여부 확인
+      const isSavedInfo = await checkSameDeviceTypeAndUserAndIP(
+        user._id,
+        ip,
+        device
+      );
+
+      // 이미 기록된 로그인이 아닌 경우에만 저장
+      if (!isSavedInfo) {
+        const info = await saveLoginInfo(loginInfo);
+
+        if (!info) {
+          throw new BadRequest("로그인 정보 등록 실패");
+        }
+      }
+
+      res.cookie("access", accessToken, {
+        httpOnly: true,
+        maxAge: 60 * 60 * 1000, // 1시간
+        sameSite: "lax",
+      });
+
+      return res.redirect("http://localhost:5173");
+    } else {
+      return res
+        .status(404)
+        .json({ message: "비가입자", success: "unauthorized" });
+    }
+  }
+);
+
 export {
   sendAuthCodeEmail,
   checkExistingEmail,
@@ -858,4 +974,5 @@ export {
   naverRequest,
   saveNaverSettings,
   kakaoSignup,
+  googleLoginCallback,
 };

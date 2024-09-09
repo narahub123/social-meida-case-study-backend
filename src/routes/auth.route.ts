@@ -11,6 +11,7 @@ import {
   naverRequest,
   saveNaverSettings,
   kakaoSignup,
+  googleLoginCallback,
 } from "../controllers/auth.controller";
 import express from "express";
 
@@ -27,4 +28,5 @@ export default (router: express.Router) => {
   router.get(`/auth/naver/callback`, naverSignup);
   router.post(`/auth/naver/settings`, saveNaverSettings);
   router.get("/auth/kakao/callback", kakaoSignup);
+  router.get("/auth/google/login/callback", googleLoginCallback);
 };
