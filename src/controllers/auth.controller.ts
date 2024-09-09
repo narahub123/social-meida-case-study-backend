@@ -20,6 +20,7 @@ import {
 import { saveImageToCloudinary } from "../utils/cloudinary";
 import { asyncWrapper } from "../middlewares/asyncWrapper";
 import { fetchAuthByUserId, saveAuthCode } from "../services/auth.service";
+import { saveLoginInfo } from "../services/login.service";
 
 // 이메일 중복확인
 const checkExistingEmail = asyncWrapper(
@@ -699,8 +700,6 @@ const normalLogin = asyncWrapper(
 
     const { type, os, browser } = fetchDeviceInfo(device);
 
-    console.log(type, os, browser);
-
     // access token, refresh token 생성하기
     // access token 생성
     const accessToken = createToken(user._id, user.userRole, "60m");
@@ -719,6 +718,14 @@ const normalLogin = asyncWrapper(
       ip,
       location,
     };
+
+    const info = await saveLoginInfo(loginInfo);
+
+    if (!info) {
+      throw new BadRequest("로그인 정보 등록 실패");
+    }
+
+    
   } // normalLogin ends
 ); // asyncWrapper ends
 
