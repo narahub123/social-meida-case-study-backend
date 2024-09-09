@@ -10,6 +10,7 @@ import {
 import { saveUserSettings } from "../services/userSettings.service";
 import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
 import {
+  checkLoginInfo,
   checkPassword,
   createAccessAndRefreshTokens,
   createAuthCode,
@@ -17,6 +18,9 @@ import {
   createToken,
   fetchDeviceInfo,
   generatePassword,
+  getToken,
+  getUserInfo,
+  getUserInfoByOauth,
 } from "../utils/auth.utils";
 import { saveImageToCloudinary } from "../utils/cloudinary";
 import { asyncWrapper } from "../middlewares/asyncWrapper";
@@ -26,6 +30,8 @@ import {
   saveLoginInfo,
 } from "../services/login.service";
 import { DeviceType } from "types/login.type";
+
+const baseUrl = process.env.BASE_URL;
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -849,79 +855,53 @@ const normalLogin = asyncWrapper(
   } // normalLogin ends
 ); // asyncWrapper ends
 
-const googleLoginCallback = asyncWrapper(
-  "googleLoginCallback",
+const oauthLogin = asyncWrapper(
+  "oauthLogin",
   async (req: Request, res: Response) => {
-    const state = req.query.state;
-
-    const ip = state.toString().split("_")[0];
-    const location = state.toString().split("_")[1];
-
-    const code = req.query.code;
+    // 공통 정보
+    const state = req.query.state.toString().split("_");
+    const ip = state[0];
+    const location = state[1];
+    const type = state[2];
     const deviceInfo = req.headers["user-agent"];
+    const device = fetchDeviceInfo(deviceInfo);
 
-    // 토큰 발급하기
-    const url = `https://oauth2.googleapis.com/token`;
-    const body = new URLSearchParams({
-      grant_type: "authorization_code",
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
-      redirect_uri: GOOGLE_REDIRECT_URL,
-      code: code as string, // TypeScript에서는 코드 타입을 문자열로 지정
-    });
+    const code = req.query.code as string;
 
-    const response = await fetch(url, {
-      method: "POST", // POST 메서드로 요청
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded", // 올바른 Content-Type
-      },
-      body: body.toString(), // 바디를 적절한 포맷으로 변환
-    });
+    //
+    const userInfo = await getUserInfoByOauth(type, code);
 
-    if (!response.ok) {
-      console.log("에러:", response.statusText);
-      throw new CustomAPIError("토큰 획득 실패");
-    }
+    console.log(userInfo);
 
-    // 응답을 JSON 형식으로 변환
-    const data = await response.json();
-
-    const ACCESS_TOKEN = data.access_token;
-
-    const requestUrl = `https://www.googleapis.com/userinfo/v2/me`;
-    // 사용자 정보 취득하기
-    const resData = await fetch(requestUrl, {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-      },
-    });
-
-    if (!resData.ok) {
-      console.log("에러:", resData.statusText);
-      throw new CustomAPIError("회원 정보 획득 실패");
-    }
-
-    const userInfo = await resData.json();
-
+    // 유저의 이메일 정보
     const email = userInfo.email;
 
+    // 해당 email를 등록한 유저 찾기
     const user = await getUserByEmail(email);
 
+    // 해당 email를 등록한 유저가 있는 경우
     if (user) {
-      const isRegistered = user.social.includes("google");
+      // 소셜이 등록되어 있는지 확인
+      const isRegistered = user.social.includes(type);
 
+      // 등록되어 있지 않다면
       if (!isRegistered) {
-        const newSocial = [...user.social, "google"];
-        await updateSocial(email, newSocial);
+        const newSocial = [...user.social, type];
+        // 소셜 추가하기
+        const updatedSocial = await updateSocial(email, newSocial);
+
+        if (updatedSocial.modifiedCount === 0) {
+          throw new BadRequest("소셜 추가 실패");
+        }
       }
 
+      // access 토큰과 refresh 토큰 생성하기
       const { accessToken, refreshToken } = createAccessAndRefreshTokens(
         user._id,
         user.userRole
       );
 
-      const device = fetchDeviceInfo(deviceInfo);
-
+      // 등록할 로그인 정보
       const loginInfo = {
         user: user._id,
         refreshToken,
@@ -930,37 +910,23 @@ const googleLoginCallback = asyncWrapper(
         location,
       };
 
-      // 동일 유저, ip, 장치를 사용한 로그인 여부 확인
-      const isSavedInfo = await checkSameDeviceTypeAndUserAndIP(
-        user._id,
-        ip,
-        device
-      );
-
-      // 이미 기록된 로그인이 아닌 경우에만 저장
-      if (!isSavedInfo) {
-        const info = await saveLoginInfo(loginInfo);
-
-        if (!info) {
-          throw new BadRequest("로그인 정보 등록 실패");
-        }
-      }
+      // 로그인 정보 등록 여부 확인
+      await checkLoginInfo(loginInfo);
 
       res.cookie("access", accessToken, {
         httpOnly: true,
         maxAge: 60 * 60 * 1000, // 1시간
         sameSite: "lax",
+        secure: false,
       });
 
-      return res.redirect("http://localhost:5173");
+      return res.redirect(baseUrl);
     } else {
-      return res
-        .status(404)
-        .json({ message: "비가입자", success: "unauthorized" });
+      // 이메일을 사용하는 유저가 없는 경우
+      return res.status(404).json({ message: "비가입자", success: "notUser" });
     }
   }
 );
-
 export {
   sendAuthCodeEmail,
   checkExistingEmail,
@@ -974,5 +940,5 @@ export {
   naverRequest,
   saveNaverSettings,
   kakaoSignup,
-  googleLoginCallback,
+  oauthLogin,
 };

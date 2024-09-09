@@ -14,6 +14,8 @@ import swaggerDocument from "../swagger.json";
 // cloudinary 이미지 처리
 import { v2 as cloudinary } from "cloudinary";
 
+const baseUrl = process.env.BASE_URL;
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -29,7 +31,7 @@ app.use("/swagger", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [baseUrl],
     methods: "GET,POST,PUT,DELETE",
     credentials: true, // 쿠키를 포함한 요청을 허용
   })
