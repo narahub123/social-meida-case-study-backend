@@ -100,6 +100,7 @@ const getDeviceType = (userAgent: string) => {
   return deviceType;
 };
 
+// Os 알아내기
 const getOsInfo = (userAgent: string) => {
   const osRegex =
     /(Windows NT \d+\.\d+|Mac OS X \d+_\d+|\bLinux\b|\bAndroid\b|\biPhone OS \d+_\d+)/i;
@@ -108,6 +109,7 @@ const getOsInfo = (userAgent: string) => {
 
   return os;
 };
+// 브라우저 알아내기
 const getBrowserInfo = (userAgent: string) => {
   const browserRegex =
     /(\bChrome\/[\d\.]+|\bFirefox\/[\d\.]+|\bSafari\/[\d\.]+|\bMSIE\s[\d\.]+|\bEdge\/[\d\.]+|Trident\/[\d\.]+)/i;
