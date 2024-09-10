@@ -8,7 +8,7 @@ import {
   updateSocial,
 } from "../services/user.service";
 import { saveUserSettings } from "../services/userSettings.service";
-import { BadRequest, CustomAPIError, DuplicateError } from "../errors";
+import { BadRequest, DuplicateError, NoContent, NotFound } from "../errors";
 import {
   checkLoginInfo,
   checkPassword,
@@ -849,20 +849,19 @@ const normalLogin = asyncWrapper(
   } // normalLogin ends
 ); // asyncWrapper ends
 
-const oauthLogin = asyncWrapper(
-  "oauthLogin",
-  async (req: Request, res: Response) => {
-    // 공통 정보
-    const state = req.query.state.toString().split("_");
+const oauthLogin = async (req: Request, res: Response) => {
+  // 공통 정보
+  const state = req.query.state.toString().split("_");
 
-    const ip = state[0];
-    const location = state[1];
-    const type = state[2];
-    const deviceInfo = req.headers["user-agent"];
-    const device = fetchDeviceInfo(deviceInfo);
+  const ip = state[0];
+  const location = state[1];
+  const type = state[2];
+  const deviceInfo = req.headers["user-agent"];
+  const device = fetchDeviceInfo(deviceInfo);
 
-    const code = req.query.code as string;
+  const code = req.query.code as string;
 
+  try {
     // oauth를 통해 유저 정보 얻기
     const userInfo = await getUserInfoByOauth(
       type,
@@ -894,8 +893,13 @@ const oauthLogin = asyncWrapper(
         // 소셜 추가하기
         const updatedSocial = await updateSocial(email, newSocial);
 
+        if (updatedSocial.matchedCount === 0) {
+          throw new NotFound("소셜 추가 실패 : 해당 유저를 찾을 수 없음");
+        }
         if (updatedSocial.modifiedCount === 0) {
-          throw new BadRequest("소셜 추가 실패");
+          throw new NoContent(
+            "소셜 추가 실패: 해당 유저는 찾았지만 소셜이 추가되지 않음"
+          );
         }
       }
 
@@ -927,10 +931,16 @@ const oauthLogin = asyncWrapper(
       return res.redirect(baseUrl);
     } else {
       // 이메일을 사용하는 유저가 없는 경우
-      return res.status(404).json({ message: "비가입자", success: "notUser" });
+      throw new NotFound("비가입자");
     }
+  } catch (error) {
+    console.log("oauthLogin에서 에러 발생", error.message);
+    return res.redirect(
+      `${baseUrl}/auth?error=${encodeURIComponent(error.statusText)}`
+    );
   }
-);
+};
+
 export {
   sendAuthCodeEmail,
   checkExistingEmail,

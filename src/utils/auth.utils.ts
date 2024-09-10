@@ -10,10 +10,10 @@ import {
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_LOGIN_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_LOGIN_REDIRECT_URI;
 
 const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
-const KAKAO_LOGIN_REDIRECT_URI = process.env.KAKAO_LOGIN_REDIRECT_URI;
+const KAKAO_REDIRECT_URI = process.env.KAKAO_LOGIN_REDIRECT_URI;
 
 const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID;
 const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET;
@@ -186,7 +186,7 @@ export const getToken = async (type: string, code: string, state?: string) => {
       grant_type: "authorization_code",
       client_id: GOOGLE_CLIENT_ID,
       client_secret: GOOGLE_CLIENT_SECRET,
-      redirect_uri: GOOGLE_LOGIN_REDIRECT_URI,
+      redirect_uri: GOOGLE_REDIRECT_URI,
       code: code as string, // TypeScript에서는 코드 타입을 문자열로 지정
     });
   }
@@ -196,7 +196,7 @@ export const getToken = async (type: string, code: string, state?: string) => {
     body = new URLSearchParams({
       grant_type: "authorization_code",
       client_id: KAKAO_REST_API_KEY,
-      redirect_uri: KAKAO_LOGIN_REDIRECT_URI,
+      redirect_uri: KAKAO_REDIRECT_URI,
       code: code as string,
     });
   }
@@ -219,23 +219,31 @@ export const getToken = async (type: string, code: string, state?: string) => {
     };
   }
 
-  const response = await fetch(token_url, {
-    method: "POST",
-    headers: headers,
-    body: body.toString(),
-  });
+  try {
+    const response = await fetch(token_url, {
+      method: "POST",
+      headers: headers,
+      body: body.toString(),
+    });
 
-  if (!response.ok) {
-    console.log(response.statusText);
+    if (!response.ok) {
+      console.log(response.statusText);
 
-    throw new CustomAPIError("토큰 획득 실패");
+      if (response.status === 400) {
+        throw new BadRequest(
+          "토큰을 얻기 위한 정보 부족으로 인한 토큰 생성 실패"
+        );
+      }
+    }
+
+    const data = await response.json();
+
+    const ACCESS_TOKEN = data.access_token;
+
+    return ACCESS_TOKEN;
+  } catch (error) {
+    throw error;
   }
-
-  const data = await response.json();
-
-  const ACCESS_TOKEN = data.access_token;
-
-  return ACCESS_TOKEN;
 };
 
 // 유저 정보 얻기
@@ -274,19 +282,23 @@ export const getUserInfo = async (type: string, accessToken: string) => {
 
 // 로그인 정보 등록
 export const checkLoginInfo = async (loginInfo: LoginType) => {
-  // 동일 유저, ip, 장치를 이용한 로그인 여부 확인
-  const isSavedLoginInfo = await checkSameDeviceTypeAndUserAndIP(
-    loginInfo.user,
-    loginInfo.ip,
-    loginInfo.device
-  );
+  try {
+    // 동일 유저, ip, 장치를 이용한 로그인 여부 확인
+    const isSavedLoginInfo = await checkSameDeviceTypeAndUserAndIP(
+      loginInfo.user,
+      loginInfo.ip,
+      loginInfo.device
+    );
 
-  // 이미 등록된 정보가 아니라면 저장
-  if (!isSavedLoginInfo || !isSavedLoginInfo.refreshToken) {
-    const info = await saveLoginInfo(loginInfo);
+    // 이미 등록된 정보가 아니라면 저장
+    if (!isSavedLoginInfo || !isSavedLoginInfo.refreshToken) {
+      const info = await saveLoginInfo(loginInfo);
 
-    if (!info) {
-      throw new BadRequest("로그인 등록 실패");
+      if (!info) {
+        throw new BadRequest("로그인 등록 실패");
+      }
     }
+  } catch (error) {
+    throw error;
   }
 };

@@ -1,3 +1,10 @@
+import {
+  BadRequest,
+  CustomAPIError,
+  DuplicateError,
+  RequestTimeout,
+  ServerUnavailable,
+} from "../errors";
 import { User } from "../models/user.model";
 
 // 이메일로 유저 정보 확인하기
@@ -5,7 +12,24 @@ const getUserByEmail = async (email: string) => {
   try {
     return await User.findOne({ email });
   } catch (error) {
-    throw error;
+    if (error.name === "MongoError") {
+      console.log("getUserByEmail에서 에러", error.errors);
+      throw new BadRequest("잘못된 필드명 혹은 잘못된 데이터 형식");
+    } else if (
+      error.name === "MongoNetworkError" &&
+      error.message.includes("timed out")
+    ) {
+      console.log("getUserByEmail에서 에러", error.errors);
+      throw new RequestTimeout("서버 과부화로 접속 차단");
+    } else if (
+      error.name === "MongoNetworkError" ||
+      error.name === "MongoServerError"
+    ) {
+      console.log("getUserByEmail에서 에러", error.errors);
+      throw new ServerUnavailable("MongoDB 연결 에러");
+    } else {
+      throw error;
+    }
   }
 };
 
@@ -70,7 +94,22 @@ const updateSocial = async (email: string, social: string[]) => {
   try {
     return await User.updateOne({ email }, { $set: { social } });
   } catch (error) {
-    throw error;
+    // 필수 필드 누락 등
+    if (error.name === "ValidationError") {
+      console.log("updateSocial에서 에러", error.errors);
+      throw new BadRequest("필수 필드 누락");
+    } else if (error.code === 11000) {
+      console.log("updateSocial에서 에러", error.errors);
+      throw new DuplicateError("로그인 정보 중복");
+    } else if (
+      error.name === "MongoNetworkError" ||
+      error.name === "MongoServerError"
+    ) {
+      console.log("updateSocial에서 에러", error.errors);
+      throw new ServerUnavailable("MongoDB 연결 에러");
+    } else {
+      throw error;
+    }
   }
 };
 
