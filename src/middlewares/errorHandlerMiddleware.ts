@@ -9,6 +9,7 @@ export const errorHandlerMiddleware = (
 ) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "내부 에러";
+  const statusText = err.statusText || "internal server error";
 
   if (err.statusCode === 413) {
     return res.status(413).json({
@@ -22,5 +23,5 @@ export const errorHandlerMiddleware = (
     res.status(409).json({ message: "중복된 데이터가 있습니다." });
   }
 
-  res.status(statusCode).json({ message });
+  res.status(statusCode).json({ message, success: statusText });
 };
