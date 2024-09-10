@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import {
   BadRequest,
   CustomAPIError,
@@ -11,6 +12,32 @@ import { User } from "../models/user.model";
 const getUserByEmail = async (email: string) => {
   try {
     return await User.findOne({ email });
+  } catch (error) {
+    if (error.name === "MongoError") {
+      console.log("getUserByEmail에서 에러", error.errors);
+      throw new BadRequest("잘못된 필드명 혹은 잘못된 데이터 형식");
+    } else if (
+      error.name === "MongoNetworkError" &&
+      error.message.includes("timed out")
+    ) {
+      console.log("getUserByEmail에서 에러", error.errors);
+      throw new RequestTimeout("서버 과부화로 접속 차단");
+    } else if (
+      error.name === "MongoNetworkError" ||
+      error.name === "MongoServerError"
+    ) {
+      console.log("getUserByEmail에서 에러", error.errors);
+      throw new ServerUnavailable("MongoDB 연결 에러");
+    } else {
+      throw error;
+    }
+  }
+};
+
+// 이메일로 유저 정보 확인하기
+const getUserById = async (_id: mongoose.Types.ObjectId) => {
+  try {
+    return await User.findById({ _id });
   } catch (error) {
     if (error.name === "MongoError") {
       console.log("getUserByEmail에서 에러", error.errors);
@@ -115,6 +142,7 @@ const updateSocial = async (email: string, social: string[]) => {
 
 export {
   getUserByEmail,
+  getUserById,
   getUserByUserId,
   saveUser,
   updateIsAuthenticated,

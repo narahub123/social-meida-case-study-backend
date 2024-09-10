@@ -5,6 +5,8 @@ import NotFound from "./not-found";
 import NoContent from "./no-content";
 import ServerUnavailable from "./server-unavailable";
 import RequestTimeout from "./request-timeout";
+import Forbidden from "./forbidden";
+import Unauthorized from "./unauthorized";
 
 export {
   CustomAPIError,
@@ -14,4 +16,6 @@ export {
   NoContent,
   ServerUnavailable,
   RequestTimeout,
+  Forbidden,
+  Unauthorized,
 };

@@ -20,7 +20,9 @@
     "sourceMap": true,
 
     // 암시적 any 타입 사용을 금지하여, 타입 안정성을 강화.
-    "noImplicitAny": true
+    "noImplicitAny": true,
+
+    "typeRoots": ["src/types", "./node_modules/@types"]
   },
   // 컴파일러가 포함할 파일을 지정. 여기서는 'src' 디렉터리 내의 모든 파일을 포함.
   "include": ["src/**/*"] // 상대 경로 사용

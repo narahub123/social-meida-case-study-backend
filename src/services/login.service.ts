@@ -62,3 +62,11 @@ export const checkSameDeviceTypeAndUserAndIP = async (
     }
   }
 };
+
+export const fetchLoginInfoById = async (loginId: mongoose.Types.ObjectId) => {
+  try {
+    return await Login.findById({ _id: loginId });
+  } catch (error) {
+    throw error;
+  }
+};

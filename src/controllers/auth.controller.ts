@@ -12,9 +12,10 @@ import { BadRequest, DuplicateError, NoContent, NotFound } from "../errors";
 import {
   checkLoginInfo,
   checkPassword,
-  createAccessAndRefreshTokens,
+  createAccessToken,
   createAuthCode,
   createHashedPassword,
+  createRefreshToken,
   createToken,
   fetchDeviceInfo,
   generatePassword,
@@ -453,11 +454,8 @@ const googleSignup = asyncWrapper(
     }
 
     // 토큰 생성
-    // access token 생성
-    const { accessToken, refreshToken } = createAccessAndRefreshTokens(
-      user._id,
-      user.userRole
-    );
+    // refresh token 생성
+    const refreshToken = createRefreshToken(user._id, "1d");
 
     // 로그인 정보를 기록
     // 장치 정보 알아내기
@@ -478,14 +476,22 @@ const googleSignup = asyncWrapper(
       device
     );
 
+    let info;
     // 이미 기록된 로그인이 아닌 경우에만 저장
     if (!isSavedInfo) {
-      const info = await saveLoginInfo(loginInfo);
+      info = await saveLoginInfo(loginInfo);
 
       if (!info) {
         throw new BadRequest("로그인 정보 등록 실패");
       }
     }
+
+    const accessToken = createAccessToken(
+      info._id,
+      user._id,
+      user.userRole,
+      "1h"
+    );
 
     // 쿠키 전송
     res.cookie("access", accessToken, {
@@ -622,11 +628,8 @@ const naverSignup = asyncWrapper(
     }
 
     // 토큰 생성
-    // access token 생성
-    const { accessToken, refreshToken } = createAccessAndRefreshTokens(
-      user._id,
-      user.userRole
-    );
+    // refresh token 생성
+    const refreshToken = createRefreshToken(user._id, "1d");
 
     // 로그인 정보를 기록
     // 장치 정보 알아내기
@@ -647,15 +650,23 @@ const naverSignup = asyncWrapper(
       device
     );
 
+    let info;
     // 이미 기록된 로그인이 아닌 경우에만 저장
     if (!isSavedInfo) {
-      const info = await saveLoginInfo(loginInfo);
+      info = await saveLoginInfo(loginInfo);
 
       if (!info) {
         throw new BadRequest("로그인 정보 등록 실패");
       }
     }
 
+    // access token 생성
+    const accessToken = createAccessToken(
+      info._id,
+      user._id,
+      user.userRole,
+      "1h"
+    );
     // 쿠키 전송
     res.cookie("access", accessToken, {
       httpOnly: true,
@@ -803,11 +814,8 @@ const normalLogin = asyncWrapper(
 
     const { type, os, browser } = fetchDeviceInfo(deviceInfo);
 
-    // access token, refresh token 생성하기
-    // access token 생성
-    const accessToken = createToken(user._id, user.userRole, "60m");
     // refresh token 생성
-    const refreshToken = createToken(user._id, "", "1d");
+    const refreshToken = createRefreshToken(user._id, "1d");
 
     // 저장할 loginInfo
     const device: DeviceType = {
@@ -831,15 +839,23 @@ const normalLogin = asyncWrapper(
       device
     );
 
+    let info;
     // 이미 기록된 로그인이 아닌 경우에만 저장
     if (!isSavedInfo) {
-      const info = await saveLoginInfo(loginInfo);
+      info = await saveLoginInfo(loginInfo);
 
       if (!info) {
         throw new BadRequest("로그인 정보 등록 실패");
       }
     }
 
+    // access token 생성
+    const accessToken = createAccessToken(
+      info._id,
+      user._id,
+      user.userRole,
+      "1h"
+    );
     res.cookie("access", accessToken, {
       httpOnly: true,
       maxAge: 60 * 60 * 1000, // 1시간
@@ -903,11 +919,8 @@ const oauthLogin = async (req: Request, res: Response) => {
         }
       }
 
-      // access 토큰과 refresh 토큰 생성하기
-      const { accessToken, refreshToken } = createAccessAndRefreshTokens(
-        user._id,
-        user.userRole
-      );
+      // refresh token 생성
+      const refreshToken = createRefreshToken(user._id, "1d");
 
       // 등록할 로그인 정보
       const loginInfo = {
@@ -919,8 +932,19 @@ const oauthLogin = async (req: Request, res: Response) => {
       };
 
       // 로그인 정보 등록 여부 확인
-      await checkLoginInfo(loginInfo);
+      const info = await checkLoginInfo(loginInfo);
 
+      console.log("정보", info);
+
+      // access token 생성
+      const accessToken = createAccessToken(
+        info._id,
+        user._id,
+        user.userRole,
+        "1h"
+      );
+
+      // 쿠키 전송
       res.cookie("access", accessToken, {
         httpOnly: true,
         maxAge: 60 * 60 * 1000, // 1시간

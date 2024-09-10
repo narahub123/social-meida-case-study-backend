@@ -74,13 +74,15 @@ export const checkPassword = async (
 
 // jwt 생성하기
 export const createToken = (
-  _id: mongoose.Types.ObjectId,
+  login_id: mongoose.Types.ObjectId,
+  user_id: mongoose.Types.ObjectId,
   role: string,
   expiresIn: string
 ) => {
   // payload에 담을 데이터
   const payload = {
-    _id,
+    login_id,
+    user_id,
     role,
   };
 
@@ -96,25 +98,47 @@ export const createToken = (
 };
 
 export const createAccessToken = (
+  login: mongoose.Types.ObjectId,
   user: mongoose.Types.ObjectId,
-  userRole: string
+  role: string,
+  expiresIn: string
 ) => {
-  return createToken(user, userRole, "1h");
+  // payload에 담을 데이터
+  const payload = {
+    login,
+    user,
+    role,
+  };
+
+  // 보안키
+  const secret = process.env.JWT_SECRET_KEY;
+
+  // 옵션
+  const options = {
+    expiresIn,
+  };
+
+  return jwt.sign(payload, secret, options);
 };
 
-export const createRefreshToken = (user: mongoose.Types.ObjectId) => {
-  return createToken(user, "", "1d");
-};
-
-// access token refresh token 생성하기
-export const createAccessAndRefreshTokens = (
+export const createRefreshToken = (
   user: mongoose.Types.ObjectId,
-  role: string
+  expiresIn: string
 ) => {
-  const accessToken = createAccessToken(user, role);
-  const refreshToken = createRefreshToken(user);
+  // payload에 담을 데이터
+  const payload = {
+    user,
+  };
 
-  return { accessToken, refreshToken };
+  // 보안키
+  const secret = process.env.JWT_SECRET_KEY;
+
+  // 옵션
+  const options = {
+    expiresIn,
+  };
+
+  return jwt.sign(payload, secret, options);
 };
 
 // 장치 정보 알아내기
@@ -297,7 +321,13 @@ export const checkLoginInfo = async (loginInfo: LoginType) => {
       if (!info) {
         throw new BadRequest("로그인 등록 실패");
       }
+
+      // 로그인 정보 리턴
+      return info;
     }
+
+    // 로그인 정보 리턴
+    return isSavedLoginInfo;
   } catch (error) {
     throw error;
   }
