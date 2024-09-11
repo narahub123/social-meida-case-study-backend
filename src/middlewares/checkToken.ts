@@ -33,7 +33,7 @@ export const checkToken = async (
     const user = await getUserById(_id);
 
     if (!user) {
-      throw new NotFound("해당 토큰을 사용하는 유저가 없음");
+      return next(new NotFound("해당 토큰을 사용하는 유저가 없음"));
     }
 
     // request에 user 정보 담기
@@ -53,7 +53,7 @@ export const checkToken = async (
       const user = await getUserById(_id);
 
       if (!user) {
-        throw new NotFound("해당 토큰을 사용하는 유저가 없음");
+        return next(new NotFound("해당 토큰을 사용하는 유저가 없음"));
       }
 
       // refresh 유효 기간 확인 하기
@@ -65,7 +65,7 @@ export const checkToken = async (
 
         // refresh token이 없는 경우(refresh 토큰이 만료된 경우) 로그인 필요
         if (!loginInfo.refreshToken) {
-          throw new Forbidden("리프레시 토큰 만료");
+          return next(new Forbidden("리프레시 토큰 만료"));
         }
 
         const refreshToken = loginInfo.refreshToken as string;
@@ -94,12 +94,12 @@ export const checkToken = async (
 
         // refresh 토큰이 유효하지 않은 경우 로그인 필요
       } catch (error) {
-        throw new Forbidden("리프레시 토큰 만료");
+        return next(new Forbidden("리프레시 토큰 만료"));
       }
 
       // 유효하지 않은 access 토큰인 경우
     } else if (err.name === "JsonWebTokenError") {
-      throw new Unauthorized("access 토큰 에러");
+      return next(new Unauthorized("access 토큰 에러"));
     }
   }
 };
